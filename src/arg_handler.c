@@ -9,7 +9,7 @@ const char doc[] = "A simple program that adds mqtt subscriber functionality to 
 const char args_doc[] = "";
 
 struct argp_option options[] = {
-  {"ca-file", 'c', "FILE", 0, "Supply path to CA file, to use TLS encryption" },
+  {"ca-file", 'c', "FILE", 0, "Supply path to CA file, needed if using TLS encryption" },
   {"username", 'u', "STRING", 0, "Needed for client authentication (as well as password)"},
   {"password", 'p', "STRING", 0, "Needed for client authentication (as well as username)"},
   { 0 }
@@ -35,7 +35,6 @@ error_t parse_opt (int key, char *arg, struct argp_state *state){
         break;
 
     default:
-        syslog(LOG_WARNING, "No options with keycode %c were passed.", key);
         return 0;
     }
 

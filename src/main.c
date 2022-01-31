@@ -22,8 +22,8 @@ int main(int argc, char *argv[])
 	 * Parse the given program options
 	 */
 	syslog(LOG_DEBUG, "Parsing options");
-    struct arguments args;
-    struct argp argp = {options, parse_opt, args_doc, doc};
+    struct arguments args = {.ca_path = "", .pass = "", .user = ""};
+    struct argp argp = {options, parse_opt, NULL, doc};
     argp_parse(&argp, argc, argv, 0, 0, &args);
 
 	/*
@@ -63,10 +63,10 @@ int main(int argc, char *argv[])
 	 * Configure TLS 
 	 * (if the necessary options are passed)
 	 */
-	if(args.ca_path != NULL){
+	if(strcmp(args.ca_path, "") != 0){
 		syslog(LOG_DEBUG, "Trying to configure TLS.");
 		rc = mosquitto_tls_set(mosq, args.ca_path, NULL, NULL, NULL, NULL);
-		port = 1883;
+		port = 8883;
 
 		if(rc != MOSQ_ERR_SUCCESS){
 			syslog(LOG_ERR, "Failed to setup TLS: %s", mosquitto_strerror(rc));
@@ -74,17 +74,18 @@ int main(int argc, char *argv[])
 		}
 	}
 
-	// /*
-	//  * Configure authentication
-	//  * (if the necessary options are passed)
-	//  */
-	// if(args.user != NULL && args.pass != NULL){
-	// 	syslog(LOG_DEBUG, "Trying to configure authentication");
-	//	port = port == 8883 ? 8885 : 1884;
-	//
-	// 	mosquitto_username_pw_set(mosq, args.user, args.pass);
-	// }
+	/*
+	 * Configure authentication
+	 * (if the necessary options are passed)
+	 */
+	if(strcmp(args.user, "") != 0 && strcmp(args.pass, "") != 0){
+		syslog(LOG_DEBUG, "Trying to configure authentication");
+		port = port == 8883 ? 8884 : 1884;
+	
+		mosquitto_username_pw_set(mosq, args.user, args.pass);
+	}
 
+	syslog(LOG_DEBUG, "Current port is %d", port);
 
 	/* Configure callbacks. This should be done before connecting ideally. */
 	mosquitto_connect_callback_set(mosq, on_connect);
