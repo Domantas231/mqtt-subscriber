@@ -5,13 +5,13 @@
 #include <uci.h>
 
 #include "linked_list.h"
-#include "load_topics.h"
+#include "load_events.h"
 
 /*
  * The topic linked list needs to be freed
  * by the function user!!!
  */
-int get_topics(node **topics){
+int get_events(node **events){
     int rc = 0;
 
     /*
@@ -40,7 +40,7 @@ int get_topics(node **topics){
          * which will be added to the linked list
          */
         node *ntmp = malloc(sizeof(node));
-        struct topic *tmp = malloc(sizeof(struct topic));
+        struct event *tmp = malloc(sizeof(struct event));
 
         /*
          * Loop through each element/option
@@ -55,12 +55,36 @@ int get_topics(node **topics){
 
             /*
              * Assign values to the allocated topic struct
+             * TODO: This can be probably implemented in a better way
              */
-            if(strcmp(option_name, "name") == 0){
-                tmp->name = option->v.string;
+            if(strcmp(option_name, "topic") == 0){
+                tmp->topic = option->v.string;
             }
-            else if(strcmp(option_name, "qos") == 0){
-                tmp->qos = atoi(option->v.string); 
+            else if(strcmp(option_name, "dataType") == 0){
+                if(strcmp(option->v.string, "number")){
+                    tmp->data_type = NUMBER;
+                } else {
+                    tmp->data_type = STRING;
+                }
+            }
+            else if(strcmp(option_name, "paramKey")){
+                tmp->param_key = option->v.string;
+            }
+            else if(strcmp(option_name, "value")){
+                tmp->value = option->v.string;
+            }
+            else if(strcmp(option_name, "compare")){
+                tmp->compare = option->v.string;
+            }
+            else if(strcmp(option_name, "recipient")){
+                /* TODO: temp only one no headache thank */
+                tmp->recipient = option->v.string;
+            }
+            else if(strcmp(option_name, "sender")){
+                tmp->recipient = option->v.string;
+            }
+            else{
+                syslog(LOG_WARNING, "A non existant option was parsed: %s", option_name);
             }
         }
 
