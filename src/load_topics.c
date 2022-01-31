@@ -13,7 +13,7 @@
  * (TODO: Check whether a double pointer
  * is necessary or not)
  */
-int get_topics(node *topics){
+int get_topics(node **topics){
     int rc = 0;
 
     const char *config_name = CFG_NAME;
@@ -68,11 +68,14 @@ int get_topics(node *topics){
             }
         }
 
+        ntmp->next = NULL;
+        ntmp->obj = tmp;
+
         /*
          * After going through all of the options
          * in a section, add them to the list
          */
-        list_addback(&topics, ntmp);
+        list_addback(topics, ntmp);
     }
 
     syslog(LOG_INFO, "Closing/Cleaning uci context");

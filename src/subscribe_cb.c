@@ -23,7 +23,7 @@ void on_subscribe(struct mosquitto *mosq, void *obj, int mid, int qos_count, con
 		 * The broker rejected all of our subscriptions.
 		 * There's no point in being connected. 
 		 */
-		syslog(LOG_ERR, "Error: All subscriptions rejected.\n");
+		syslog(LOG_ERR, "All subscriptions rejected, disconnecting.\n");
 		mosquitto_disconnect(mosq);
 	}
 }

@@ -1,8 +1,8 @@
 CC:=gcc
 SRC:=$(wildcard *.c)
 OBJS:=$(SRC:.c=.o)
-LDFLAGS:=-lmosquitto -lsqlite3
-BIN:=main
+LDFLAGS:=-lmosquitto -lsqlite3 -luci -largp
+BIN:=mqtt_subscriber
 
 .PHONY: all clean
 

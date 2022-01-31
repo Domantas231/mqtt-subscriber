@@ -11,28 +11,24 @@ int subscribe_every_topic(struct mosquitto *mosq){
 	/* TODO: this rc is tricky */
 	int rc = 0;
 
-	/*
-	 * Arbitrary array size, need to 
-	 * be dynamic probably
-	 */ 
 	node *topics = NULL;
 
 	/* ==========================
 	 * TEMPORARY
 	 * ========================== */
 
-	for(int i = 0; i < 3; i++){
-		struct topic *tmp = malloc(sizeof(struct topic));
-    	node *ntmp = malloc(sizeof(node));
+	// for(int i = 0; i < 3; i++){
+	// 	struct topic *tmp = malloc(sizeof(struct topic));
+    // 	node *ntmp = malloc(sizeof(node));
 
-		tmp->name = "name or smth";
-		tmp->qos = i;
+	// 	tmp->name = "name or smth";
+	// 	tmp->qos = i;
 
-		ntmp->obj = tmp;
-		ntmp->next = NULL;
+	// 	ntmp->obj = tmp;
+	// 	ntmp->next = NULL;
 
-		list_addback(&topics, ntmp);
-	}
+	// 	list_addback(&topics, ntmp);
+	// }
 
 	/* ==========================
 	 * TEMPORARY
@@ -42,7 +38,7 @@ int subscribe_every_topic(struct mosquitto *mosq){
 	 * Load topics from config file
 	 * TODO: maybe have this in a different function(?)
 	 */
-	//get_topics(topics, t_num);
+	get_topics(&topics);
 
 	/*
 	 * Send all of the topics/subscribe packets

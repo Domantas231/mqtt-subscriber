@@ -10,16 +10,25 @@
 #include "subscribe_cb.h"
 #include "message_cb.h"
 #include "msg_db_handler.h"
+#include "arg_handler.h"
 
-/* temp domain */
-#define DOMAIN "localhost"
+#define DOMAIN "test.mosquitto.org"
 
 int main(int argc, char *argv[])
 {
 	int rc;
 
 	/*
-	 * TODO: change a bit so it isn't so open
+	 * Parse the given program options
+	 */
+	syslog(LOG_DEBUG, "Parsing options");
+    struct arguments args;
+    struct argp argp = {options, parse_opt, args_doc, doc};
+    argp_parse(&argp, argc, argv, 0, 0, &args);
+
+	/*
+	 * Open the database used for saving
+	 * received messages
 	 */
 	open_db();
 
@@ -39,9 +48,43 @@ int main(int argc, char *argv[])
 	 */
 	mosq = mosquitto_new(NULL, true, NULL);
 	if(mosq == NULL){
-		syslog(LOG_ERR, "Error: Out of memory.\n");
+		syslog(LOG_ERR, "Out of memory, failed to start mosquitto context.\n");
 		exit(EXIT_FAILURE);
 	}
+
+	/*
+	 * Default port for unauthenticated, uncencrypted
+	 * test.mosquitto.org broker
+	 * (this will change if TLS or authentication is specified)
+	 */
+	int port = 1883;
+
+	/*
+	 * Configure TLS 
+	 * (if the necessary options are passed)
+	 */
+	if(args.ca_path != NULL){
+		syslog(LOG_DEBUG, "Trying to configure TLS.");
+		rc = mosquitto_tls_set(mosq, args.ca_path, NULL, NULL, NULL, NULL);
+		port = 1883;
+
+		if(rc != MOSQ_ERR_SUCCESS){
+			syslog(LOG_ERR, "Failed to setup TLS: %s", mosquitto_strerror(rc));
+			goto cleanup;
+		}
+	}
+
+	// /*
+	//  * Configure authentication
+	//  * (if the necessary options are passed)
+	//  */
+	// if(args.user != NULL && args.pass != NULL){
+	// 	syslog(LOG_DEBUG, "Trying to configure authentication");
+	//	port = port == 8883 ? 8885 : 1884;
+	//
+	// 	mosquitto_username_pw_set(mosq, args.user, args.pass);
+	// }
+
 
 	/* Configure callbacks. This should be done before connecting ideally. */
 	mosquitto_connect_callback_set(mosq, on_connect);
@@ -52,9 +95,9 @@ int main(int argc, char *argv[])
 	 * This call makes the socket connection only, it does not complete the MQTT
 	 * CONNECT/CONNACK flow, you should use mosquitto_loop_start() or
 	 * mosquitto_loop_forever() for processing net traffic. */
-	rc = mosquitto_connect(mosq, DOMAIN, 1883, 60);
+	rc = mosquitto_connect(mosq, DOMAIN, port, 60);
 	if(rc != MOSQ_ERR_SUCCESS){;
-		syslog(LOG_ERR, "Error: %s\n", mosquitto_strerror(rc));
+		syslog(LOG_ERR, "Failed to connect to domain: %s\n", mosquitto_strerror(rc));
 		goto cleanup;
 	}
 

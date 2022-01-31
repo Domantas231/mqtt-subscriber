@@ -3,11 +3,13 @@
 
 #define CFG_NAME "mqtt_sub_topics"
 
+#include "linked_list.h"
+
 struct topic {
     char *name;
     int qos;
 };
 
-// int get_topics(struct topic topics[], int t_num);
+int get_topics(node **topics);
 
 #endif
