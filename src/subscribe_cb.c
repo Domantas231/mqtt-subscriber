@@ -14,7 +14,7 @@ void on_subscribe(struct mosquitto *mosq, void *obj, int mid, int qos_count, con
 		syslog(LOG_DEBUG, "on_subscribe: %d:granted qos = %d\n", i, granted_qos[i]);
 
 		if(granted_qos[i] <= 2){
-			syslog(LOG_DEBUG, "Successfully subscribed to \"%s\" topic", "example:(");
+			syslog(LOG_DEBUG, "Successfully subscribed to \"%s\" topic", "i dont know");
 			have_subscription = true;
 		}
 	}

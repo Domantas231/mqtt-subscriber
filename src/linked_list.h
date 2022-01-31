@@ -10,8 +10,6 @@ typedef struct node {
     struct node *next; 
 }node;
 
-int list_print(node *head);
-int node_print(node *el);
 void list_addback(node **head, node *new);
 int list_add(node **head, node *new, int k);
 void list_delall(node **head);

@@ -1,6 +1,7 @@
 #include <syslog.h>
 #include <mosquitto.h>
 #include <stdio.h>
+#include <stdlib.h>
 
 #include "connect_cb.h"
 #include "load_topics.h"
@@ -14,31 +15,24 @@ int subscribe_every_topic(struct mosquitto *mosq){
 	 * Arbitrary array size, need to 
 	 * be dynamic probably
 	 */ 
-	node *topics;
+	node *topics = NULL;
 
 	/* ==========================
 	 * TEMPORARY
 	 * ========================== */
 
-    struct topic tmp;
-    node ntmp;
-	tmp.name = "example/temp";
-	tmp.qos = 0;
+	for(int i = 0; i < 3; i++){
+		struct topic *tmp = malloc(sizeof(struct topic));
+    	node *ntmp = malloc(sizeof(node));
 
-    list_addback(&topics, &ntmp);
-	
-	tmp.name = "example/kitchen";
-	tmp.qos = 1;
+		tmp->name = "name or smth";
+		tmp->qos = i;
 
-    ntmp.obj = &tmp;
-    list_addback(&topics, &ntmp);
-    
+		ntmp->obj = tmp;
+		ntmp->next = NULL;
 
-	tmp.name = "example/furnace";
-	tmp.qos = 2;
-
-    ntmp.obj = &tmp;
-    list_addback(&topics, &ntmp);
+		list_addback(&topics, ntmp);
+	}
 
 	/* ==========================
 	 * TEMPORARY
@@ -54,9 +48,7 @@ int subscribe_every_topic(struct mosquitto *mosq){
 	 * Send all of the topics/subscribe packets
 	 * to the broker 
 	 */
-
-    syslog(LOG_DEBUG, "starting to iterate through the list");
-	for(node *iter = topics; iter->next != NULL; iter = iter->next){
+	for(node *iter = topics; iter != NULL; iter = iter->next){
 		/* 
 		* Making subscriptions in the on_connect() callback means that if the
 		* connection drops and is automatically resumed by the client, then the
@@ -64,9 +56,7 @@ int subscribe_every_topic(struct mosquitto *mosq){
 		*/
         struct topic *tpcm = (struct topic *)iter->obj;
 
-        syslog(LOG_DEBUG, "this is a fun ride");
-
-		syslog(LOG_INFO, "Trying to subscribe to %s", tpcm->name);
+		syslog(LOG_INFO, "Trying to subscribe to %s with qos %d", tpcm->name, tpcm->qos);
 		rc = mosquitto_subscribe(mosq, NULL, tpcm->name, tpcm->qos);
 
 		if(rc != MOSQ_ERR_SUCCESS){
@@ -74,7 +64,7 @@ int subscribe_every_topic(struct mosquitto *mosq){
 		}
 	}
 
-    list_delall(topics);
+    list_delall(&topics);
 	return rc;
 }
 

@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <memory.h>
 
 #include "linked_list.h"
 
@@ -46,6 +47,7 @@ void list_delall(node **head){
         temp = *head;
         *head = (*head)->next;
 
+        free(temp->obj);
         free(temp);
     }
 }
@@ -90,4 +92,3 @@ int list_delid(node **head, int k){
 
     return 0;
 }
-
