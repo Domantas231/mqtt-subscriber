@@ -47,7 +47,9 @@ static char payload_body[1024];
 static char payload_text[2048];
 
 static void update_payload(){
-  sprintf(payload_text, "%s%s", payload_header, payload_body);
+  syslog(LOG_DEBUG, "Updating the whole payload");
+
+  snprintf(payload_text, 2048, "%s%s", payload_header, payload_body);
 }
 
 static int create_pbody(char *msg){
@@ -172,7 +174,7 @@ int send_mail(char *msg, char *sndr_mail, char *recpt_mail, int port, int use_ss
  
     /* Check for errors */
     if(res != CURLE_OK)
-      fprintf(stderr, "curl_easy_perform() failed: %s\n",
+      syslog(LOG_ERR, "curl_easy_perform() failed: %s\n",
               curl_easy_strerror(res));
  
     /* Free the list of recipients */
@@ -191,11 +193,3 @@ int send_mail(char *msg, char *sndr_mail, char *recpt_mail, int port, int use_ss
  
   return (int)res;
 }
-
-// int main(void){
-//   int rc = 0;
-
-//   rc = send_mail("SVARBU VEIKIA", "domantas231@gmail.com", "domantas231@gmail.com", 25, 0);
-
-//   return rc;
-// }

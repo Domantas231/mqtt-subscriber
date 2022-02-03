@@ -58,30 +58,30 @@ int get_events(node **events){
              * TODO: This can be probably implemented in a better way
              */
             if(strcmp(option_name, "topic") == 0){
-                tmp->topic = option->v.string;
+                strcpy(tmp->topic, option->v.string);
             }
             else if(strcmp(option_name, "dataType") == 0){
                 if(strcmp(option->v.string, "number")){
-                    tmp->data_type = NUMBER;
+                    tmp->dt = NUMBER;
                 } else {
-                    tmp->data_type = STRING;
+                    tmp->dt = STRING;
                 }
             }
             else if(strcmp(option_name, "paramKey")){
-                tmp->param_key = option->v.string;
+                strcpy(tmp->param_key, option->v.string);
             }
             else if(strcmp(option_name, "value")){
-                tmp->value = option->v.string;
+                strcpy(tmp->value, option->v.string);
             }
             else if(strcmp(option_name, "compare")){
-                tmp->compare = option->v.string;
+                strcpy(tmp->compare, option->v.string);
             }
             else if(strcmp(option_name, "recipient")){
                 /* TODO: temp only one no headache thank */
-                tmp->recipient = option->v.string;
+                strcpy(tmp->recipient, option->v.string);
             }
             else if(strcmp(option_name, "sender")){
-                tmp->recipient = option->v.string;
+                strcpy(tmp->recipient, option->v.string);
             }
             else{
                 syslog(LOG_WARNING, "A non existant option was parsed: %s", option_name);
@@ -95,7 +95,7 @@ int get_events(node **events){
          * After going through all of the options
          * in a section, add them to the list
          */
-        list_addback(topics, ntmp);
+        list_addback(events, ntmp);
     }
 
     syslog(LOG_INFO, "Closing/Cleaning uci context");

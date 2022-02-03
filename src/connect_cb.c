@@ -12,28 +12,6 @@ int subscribe_every_topic(struct mosquitto *mosq){
 	int rc = 0;
 
 	node *topics = NULL;
-
-	/* ==========================
-	 * TEMPORARY
-	 * ========================== */
-
-	// for(int i = 0; i < 3; i++){
-	// 	struct topic *tmp = malloc(sizeof(struct topic));
-    // 	node *ntmp = malloc(sizeof(node));
-
-	// 	tmp->name = "name or smth";
-	// 	tmp->qos = i;
-
-	// 	ntmp->obj = tmp;
-	// 	ntmp->next = NULL;
-
-	// 	list_addback(&topics, ntmp);
-	// }
-
-	/* ==========================
-	 * TEMPORARY
-	 * ========================== */
-
 	/*
 	 * Load topics from config file
 	 * TODO: maybe have this in a different function(?)
