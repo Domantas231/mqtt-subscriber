@@ -13,7 +13,7 @@ int find_by_topic(char *topic, node *events, struct event **ev_result){
         struct event *tmp = (struct event *)iter->obj;
 
         if(strcmp(topic, tmp->topic) == 0){
-            ev_result = &tmp;
+            *ev_result = tmp;
             return 0;
         }
     }
@@ -25,19 +25,21 @@ int find_by_topic(char *topic, node *events, struct event **ev_result){
 /*
  * TODO: Add a check for whether the string is in json format
  */
-int parse_value(struct event ev, char *payload, void *value){
+int parse_value(struct event ev, char *payload, char *value){
     int rc = 0;
     
     json_object *jso = json_tokener_parse(payload);
 
     json_object *topic = json_object_object_get(jso, ev.topic);
 
-    char const *prsd_val = json_object_to_json_string_ext(topic, 0);
-    if(strcmp(prsd_val, "null") == 0){
+    char const *prsd_val = json_object_to_json_string_ext(ev.topic, 0);
+    if(prsd_val == NULL){
         rc = 1;
     }
 
-    value = prsd_val;
+    syslog(LOG_DEBUG, "what is happening %s", prsd_val);
+
+    strcpy(value, prsd_val);
 
     json_object_put(jso);
     return rc;
@@ -56,7 +58,9 @@ int compare_int_msg(struct event ev, void *value, int *res){
         *res = 1;
     }
     else if(strcmp(ev.compare, "<") == 0){
-        if(*(int *)value < atoi(ev.value)){
+        syslog(LOG_DEBUG, "the calm before the storm %s", (char *)value);
+
+        if(123 < atoi(ev.value)){
             *res = 0;
         }
 
@@ -121,23 +125,28 @@ void on_message(struct mosquitto *mosq, void *obj, const struct mosquitto_messag
      */
 
     struct event *got_ev = NULL;
-    if(!find_by_topic(msg->topic, events, &got_ev)){
-        return;
-    }
-
-    syslog(LOG_DEBUG, "Found event: %s, with value %s", got_ev->topic, got_ev->value);
 
     /*
-     * TODO: Not very safe i cry
+     * TODO: need to fix the function below
+     * so that i returns a 0 on successfully
+     * finding the event by topic
      */ 
-    void *value = NULL;
+
+    if(find_by_topic(msg->topic, events, &got_ev)){
+        return;
+    }
+    syslog(LOG_DEBUG, "Found event: %s, with value %s", got_ev->topic, got_ev->value);
+    
+    char *value;
     parse_value(*got_ev, (char *)msg->payload, value);
+
+    syslog(LOG_DEBUG, "nu wtf %s", value);
 
     int res;
     compare_int_msg(*got_ev, value, &res);
 
     syslog(LOG_DEBUG, "Comparing returned %d", res);
-    if(res){
+    if(!res){
         syslog(LOG_DEBUG, "Trying to send notification email");
         send_mail("IT WORKS!!!", got_ev->sender, got_ev->recipient, 25, 0);
     }

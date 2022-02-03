@@ -67,21 +67,21 @@ int get_events(node **events){
                     tmp->dt = STRING;
                 }
             }
-            else if(strcmp(option_name, "paramKey")){
+            else if(strcmp(option_name, "paramKey") == 0){
                 strcpy(tmp->param_key, option->v.string);
             }
-            else if(strcmp(option_name, "value")){
+            else if(strcmp(option_name, "value") == 0){
                 strcpy(tmp->value, option->v.string);
             }
-            else if(strcmp(option_name, "compare")){
+            else if(strcmp(option_name, "compare") == 0){
                 strcpy(tmp->compare, option->v.string);
             }
-            else if(strcmp(option_name, "recipient")){
+            else if(strcmp(option_name, "recipient") == 0){
                 /* TODO: temp only one no headache thank */
                 strcpy(tmp->recipient, option->v.string);
             }
-            else if(strcmp(option_name, "sender")){
-                strcpy(tmp->recipient, option->v.string);
+            else if(strcmp(option_name, "sender") == 0){
+                strcpy(tmp->sender, option->v.string);
             }
             else{
                 syslog(LOG_WARNING, "A non existant option was parsed: %s", option_name);
