@@ -1,5 +1,6 @@
 #include <syslog.h>
 #include <mosquitto.h>
+#include <json.h>
 
 #include "msg_db_handler.h"
 #include "linked_list.h"
@@ -39,7 +40,8 @@ void on_message(struct mosquitto *mosq, void *obj, const struct mosquitto_messag
     void *value = NULL;
     parse_value(got_ev, (char *)msg->payload, value);
 
-    compare_msg(got_ev, value);
+    int *res = NULL;
+    compare_msg(got_ev, value, res);
 
     send_notice();
 
@@ -60,45 +62,77 @@ int find_by_topic(char *topic, node *events, struct event *ev_result){
     return 1;
 }
 
+/*
+ * TODO: Add a check for whether the string is in json format
+ */
 int parse_value(struct event ev, char *payload, void *value){
+    int rc = 0;
+    
+    json_object *jso = json_tokener_parse(payload);
 
+    json_object *topic = json_object_object_get(jso, ev.topic);
+
+    char *prsd_val = json_object_to_json_string_ext(topic, 0);
+    if(strcmp(prsd_val, "null") == 0){
+        rc = 1;
+    }
+
+    value = prsd_val;
+
+    json_object_put(jso);
+    return rc;
 }
 
-int compare_msg(struct event ev, void *value){
-    /*
-     * TODO: highly likely this can be done with 
-     * a switch case where there are nested cases
-     */
+/*
+ * TODO: Make a separate function for ints and strings
+ */
 
-    /*
-     * TODO: Need to check whether this is a string
-     * or a number so that the later comparisons don't 
-     * do something funny
-     */
+int compare_int_msg(struct event ev, void *value, int *res){
     if(strcmp(ev.compare, ">") == 0){
         if(*(int *)value > ev.value){
-            return 0;
+            *res = 0;
         }
 
-        return 1;
+        *res = 1;
     }
     else if(strcmp(ev.compare, "<") == 0){
+        if(*(int *)value < ev.value){
+            *res = 0;
+        }
 
+        *res = 1;
     }
     else if(strcmp(ev.compare, "==") == 0){
+        if(*(int *)value == ev.value){
+            *res = 0;
+        }
 
+        *res = 1;
     }
     else if(strcmp(ev.compare, "!=") == 0){
+        if(*(int *)value =! ev.value){
+            *res = 0;
+        }
 
+        *res = 1;
     }
     else if(strcmp(ev.compare, "<=") == 0){
+        if(*(int *)value <= ev.value){
+            *res = 0;
+        }
 
+        *res = 1;
     }
     else if(strcmp(ev.compare, ">=") == 0){
+        if(*(int *)value >= ev.value){
+            *res = 0;
+        }
 
+        *res = 1;
+    }
+    else {
+        return 1;
     }
 
-    /*
-     * TODO: Could add checking here is compare is a right value 
-     */
+    return 0;
 }
