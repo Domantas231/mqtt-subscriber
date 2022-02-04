@@ -25,74 +25,95 @@ int find_by_topic(char *topic, node *events, struct event **ev_result){
 /*
  * TODO: Add a check for whether the string is in json format
  */
-int parse_value(struct event ev, char *payload, char *value){
+int parse_value(struct event ev, char *payload, char **value){
     int rc = 0;
     
     json_object *jso = json_tokener_parse(payload);
+    syslog(LOG_DEBUG, "Tokener got - %s", json_object_to_json_string_ext(jso, 0));
+    json_object *topic = json_object_object_get(jso, ev.param_key);
 
-    json_object *topic = json_object_object_get(jso, ev.topic);
-
-    char const *prsd_val = json_object_to_json_string_ext(ev.topic, 0);
+    /*
+     * TODO: Fix this error checking, cause it dont work
+     */
+    char const *prsd_val = json_object_to_json_string_ext(topic, 0);
     if(prsd_val == NULL){
         rc = 1;
     }
 
-    syslog(LOG_DEBUG, "what is happening %s", prsd_val);
-
-    strcpy(value, prsd_val);
+    strcpy(*value, prsd_val);
 
     json_object_put(jso);
     return rc;
 }
 
+int compare_str_msg(struct event ev, char *value, int *res){
+    if(strcmp(ev.compare, "==") == 0){
+        if(strcmp(ev.value, value) == 0){
+            *res = 0;
+        }
+        else
+            *res = 1;
+    }
+    else if(strcmp(ev.compare, "!=") == 0){
+        if(strcmp(ev.value, value) == 0){
+            *res = 0;
+        }
+        else
+            *res = 1;
+    }
+
+    return 0;
+}
+
 /*
  * TODO: Make a separate function for ints and strings
  */
-
-int compare_int_msg(struct event ev, void *value, int *res){
+int compare_int_msg(struct event ev, char *value, int *res){
+    /*
+     * TODO: Fix this horrendous mess
+     */
+    
     if(strcmp(ev.compare, ">") == 0){
-        if(*(int *)value > atoi(ev.value)){
+        if(atoi(value) > atoi(ev.value)){
             *res = 0;
         }
-
-        *res = 1;
+        else
+            *res = 1;
     }
     else if(strcmp(ev.compare, "<") == 0){
-        syslog(LOG_DEBUG, "the calm before the storm %s", (char *)value);
-
-        if(123 < atoi(ev.value)){
+        if(atoi(value) < atoi(ev.value)){
             *res = 0;
         }
-
-        *res = 1;
+        else
+            *res = 1;
     }
     else if(strcmp(ev.compare, "==") == 0){
-        if(*(int *)value == atoi(ev.value)){
+        if(atoi(value) == atoi(ev.value)){
             *res = 0;
         }
-
-        *res = 1;
+        else
+            *res = 1;
     }
     else if(strcmp(ev.compare, "!=") == 0){
-        if(*(int *)value =! atoi(ev.value)){
+        if(atoi(value) != atoi(ev.value)){
             *res = 0;
         }
-
-        *res = 1;
+        else
+            *res = 1;
     }
     else if(strcmp(ev.compare, "<=") == 0){
-        if(*(int *)value <= atoi(ev.value)){
+        if(atoi(value) <= atoi(ev.value)){
             *res = 0;
         }
-
-        *res = 1;
+        else
+            *res = 1;
     }
     else if(strcmp(ev.compare, ">=") == 0){
-        if(*(int *)value >= atoi(ev.value)){
+        if(atoi(value) >= atoi(ev.value)){
             *res = 0;
         }
-
-        *res = 1;
+        else
+            *res = 1;
     }
     else {
         return 1;
@@ -138,9 +159,7 @@ void on_message(struct mosquitto *mosq, void *obj, const struct mosquitto_messag
     syslog(LOG_DEBUG, "Found event: %s, with value %s", got_ev->topic, got_ev->value);
     
     char *value;
-    parse_value(*got_ev, (char *)msg->payload, value);
-
-    syslog(LOG_DEBUG, "nu wtf %s", value);
+    parse_value(*got_ev, (char *)msg->payload, &value);
 
     int res;
     compare_int_msg(*got_ev, value, &res);
@@ -148,8 +167,11 @@ void on_message(struct mosquitto *mosq, void *obj, const struct mosquitto_messag
     syslog(LOG_DEBUG, "Comparing returned %d", res);
     if(!res){
         syslog(LOG_DEBUG, "Trying to send notification email");
-        send_mail("IT WORKS!!!", got_ev->sender, got_ev->recipient, 25, 0);
+        send_mail("Warning: something:)", got_ev->sender, got_ev->recipient, 25, 0);
     }
 
+    /*
+     * Free all the allocated events
+     */
     list_delall(&events);
 }

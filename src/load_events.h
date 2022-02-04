@@ -4,6 +4,7 @@
 #define CFG_NAME "mqtt_sub_events"
 
 /*
+ * TODO: recipients should be in a linked list
  * Arbitrary number, enough space to store a long topic?
  */
 #define N 50

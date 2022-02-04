@@ -37,7 +37,7 @@ int main(int argc, char *argv[])
 	 */
 	setup_signals();
 
-	/* Required before calling other mosquitto functions */
+	/* Required(?) before calling other mosquitto functions */
 	struct mosquitto *mosq;
 	mosquitto_lib_init();
 
