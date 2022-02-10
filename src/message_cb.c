@@ -164,10 +164,17 @@ void on_message(struct mosquitto *mosq, void *obj, const struct mosquitto_messag
     int res;
     compare_int_msg(*got_ev, value, &res);
 
+    /*
+     * 26 is the exact number of characters
+     * in a string that contains the time/date.
+     */
+    char* time[26];
+    curr_time(time, 26);
+
     syslog(LOG_DEBUG, "Comparing returned %d", res);
     if(!res){
         syslog(LOG_DEBUG, "Trying to send notification email");
-        send_mail("Warning: something:)", got_ev->sender, got_ev->recipient, 25, 0);
+        send_mail("Warning: something:)", got_ev->sender, got_ev->sender_passw, got_ev->recipient, 25, 0, time, "example message");
     }
 
     /*

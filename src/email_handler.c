@@ -101,8 +101,10 @@ static size_t payload_source(char *ptr, size_t size, size_t nmemb, void *userp)
   return 0;
 }
  
-int send_mail(char *msg, char *sndr_mail, char *recpt_mail, int port, int use_ssl)
+int send_mail(char *msg, char *sndr_mail, char* sndr_passw, char *recpt_mail, int port, int use_ssl, char* time, char* subject)
 {
+  syslog(LOG_DEBUG, "To funcion send_mail was passed: %s %s %s %d %d", msg, sndr_mail, recpt_mail, port, use_ssl);
+
   CURL *curl;
   CURLcode res = CURLE_OK;
   struct curl_slist *recipients = NULL;
@@ -116,7 +118,7 @@ int send_mail(char *msg, char *sndr_mail, char *recpt_mail, int port, int use_ss
      */
 
     char server_addr[30];
-    sprintf(server_addr, "smtp.freesmtpservers.com:%d", port);
+    sprintf(server_addr, "smtp.mailgun.org:%d", port);
 
     /* This is the URL for your mailserver */
     curl_easy_setopt(curl, CURLOPT_URL, server_addr);
@@ -129,6 +131,8 @@ int send_mail(char *msg, char *sndr_mail, char *recpt_mail, int port, int use_ss
      * details.
      */
     curl_easy_setopt(curl, CURLOPT_MAIL_FROM, sndr_mail);
+    curl_easy_setopt(curl, CURLOPT_USERNAME, sndr_mail);
+    curl_easy_setopt(curl, CURLOPT_PASSWORD, sndr_passw);
 
     /*
      * Use ssl verification
@@ -174,8 +178,7 @@ int send_mail(char *msg, char *sndr_mail, char *recpt_mail, int port, int use_ss
  
     /* Check for errors */
     if(res != CURLE_OK)
-      syslog(LOG_ERR, "curl_easy_perform() failed: %s\n",
-              curl_easy_strerror(res));
+      syslog(LOG_ERR, "curl_easy_perform() failed: %d\n", res);
  
     /* Free the list of recipients */
     curl_slist_free_all(recipients);

@@ -20,8 +20,9 @@ struct event {
     enum data_type dt;
     char value[N];
     char compare[2];
-    char sender[N];
-    char recipient[N];
+    char sender[2*N];
+    char recipient[2*N];
+    char sender_passw[2*N];
 };
 
 int get_events(node **events);

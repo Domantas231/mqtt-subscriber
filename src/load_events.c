@@ -83,6 +83,9 @@ int get_events(node **events){
             else if(strcmp(option_name, "sender") == 0){
                 strcpy(tmp->sender, option->v.string);
             }
+            else if(strcmp(option_name, "senderPassw") == 0){
+                strcpy(tmp->sender_passw, option->v.string);
+            }
             else{
                 syslog(LOG_WARNING, "A non existant option was parsed: %s", option_name);
             }
