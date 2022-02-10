@@ -102,19 +102,7 @@ int main(int argc, char *argv[])
 		goto cleanup;
 	}
 
-	/* Run the network loop in a blocking call. The only thing we do in this
-	 * example is to print incoming messages, so a blocking call here is fine.
-	 *
-	 * This call will continue forever, carrying automatic reconnections if
-	 * necessary, until the user calls mosquitto_disconnect().
-	 */
-
 	mosquitto_loop_forever(mosq, 5000, 1);
-
-	// /*
-	//  * TODO: Check whether force is really needed 
-	//  */
-	// mosquitto_loop_stop(mosq, true);
 
 	syslog(LOG_INFO, "Cleaning up program");
 	/*
