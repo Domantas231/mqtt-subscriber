@@ -41,6 +41,7 @@ int get_events(node **events){
          */
         node *ntmp = malloc(sizeof(node));
         struct event *tmp = malloc(sizeof(struct event));
+        tmp->recp_list = NULL;
 
         /*
          * Loop through each element/option
@@ -51,6 +52,11 @@ int get_events(node **events){
         {
             struct uci_option *option = uci_to_option(j);
             char *option_name = option->e.name;
+
+            /*
+             * TODO: The function below does not work when a list option 
+             * is parsed. fix, thank            
+             */
             syslog(LOG_DEBUG, "Got option name and value: %s %s", option_name, option->v.string);
 
             /*
@@ -77,8 +83,24 @@ int get_events(node **events){
                 strcpy(tmp->compare, option->v.string);
             }
             else if(strcmp(option_name, "recipient") == 0){
-                /* TODO: temp only one no headache thank */
-                strcpy(tmp->recipient, option->v.string);
+                /*
+                 * Iterates through each recipient in the 
+                 * list and adds them all to the event list
+                 */
+                struct uci_element *el;
+                uci_foreach_element(&option->v.list, el){
+                    /*
+                     * TODO: cursed 
+                     */
+                    
+                    node *el_tmp = malloc(sizeof(node));
+
+                    el_tmp->next = NULL;
+                    el_tmp->obj = malloc(sizeof(char) * (strlen(el->name) + 1));
+
+                    strcpy(el_tmp->obj, el->name);
+                    list_addback(&tmp->recp_list, el_tmp);
+                }
             }
             else if(strcmp(option_name, "sender") == 0){
                 strcpy(tmp->sender, option->v.string);

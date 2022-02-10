@@ -21,7 +21,7 @@ struct event {
     char value[N];
     char compare[2];
     char sender[2*N];
-    char recipient[2*N];
+    node* recp_list;
     char sender_passw[2*N];
 };
 

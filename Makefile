@@ -22,7 +22,7 @@ define Package/mqtt_subscriber/install
 	$(INSTALL_DIR) $(1)/etc/init.d
 	$(INSTALL_BIN) $(PKG_BUILD_DIR)/mqtt_subscriber $(1)/usr/bin
 	# $(INSTALL_BIN) ./files/mqtt_subscriber.init $(1)/etc/init.d/mqtt_subscriber
-	$(INSTALL_CONF) ./files/topics.config $(1)/etc/config/mqtt_sub_topics
+	$(INSTALL_CONF) ./files/topics.config $(1)/etc/config/mqtt_sub_topics 
 	$(INSTALL_CONF) ./files/events.config $(1)/etc/config/mqtt_sub_events
 endef
 

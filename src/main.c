@@ -32,11 +32,6 @@ int main(int argc, char *argv[])
 	 */
 	open_db();
 
-	/*
-	 * Setting up signal handlers
-	 */
-	setup_signals();
-
 	/* Required(?) before calling other mosquitto functions */
 	struct mosquitto *mosq;
 	mosquitto_lib_init();
@@ -51,6 +46,11 @@ int main(int argc, char *argv[])
 		syslog(LOG_ERR, "Out of memory, failed to start mosquitto context.\n");
 		exit(EXIT_FAILURE);
 	}
+
+	/*
+	 * Setting up signal handlers
+	 */
+	setup_signals(mosq);
 
 	/*
 	 * Default port for unauthenticated, uncencrypted
@@ -108,17 +108,13 @@ int main(int argc, char *argv[])
 	 * This call will continue forever, carrying automatic reconnections if
 	 * necessary, until the user calls mosquitto_disconnect().
 	 */
-	mosquitto_loop_start(mosq);
 
+	mosquitto_loop_forever(mosq, 5000, 1);
 
-	while(daemonise){
-		// TODO: do something
-	}
-
-	/*
-	 * TODO: Check whether force is really needed 
-	 */
-	mosquitto_loop_stop(mosq, true);
+	// /*
+	//  * TODO: Check whether force is really needed 
+	//  */
+	// mosquitto_loop_stop(mosq, true);
 
 	syslog(LOG_INFO, "Cleaning up program");
 	/*
@@ -126,6 +122,7 @@ int main(int argc, char *argv[])
 	 */
 	close_db();
 	mosquitto_lib_cleanup();
+	mosquitto_destroy(mosq);
 	exit(EXIT_SUCCESS);
 
 	cleanup:

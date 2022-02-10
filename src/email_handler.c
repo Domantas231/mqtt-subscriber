@@ -30,6 +30,8 @@
 #include <curl/curl.h>
 #include <syslog.h>
  
+#include "linked_list.h"
+
 /*
  * For an SMTP example using the multi interface please see smtp-multi.c.
  */
@@ -63,8 +65,8 @@ static void create_pheader(char *date, char *sndr_email, char *recpt_email, char
 
   snprintf(payload_header, 1024,
   "Date: %s +1100\r\n"
-  "To: A Receiver %s\r\n"
-  "From: Sender Person %s\r\n"
+  "To: %s\r\n"
+  "From: %s\r\n"
   "Message-ID: <dcd7cb36-11db-487a-9f3a-e652a9458efd@"
   "rfcpedant.example.org>\r\n"
   "Subject: %s\r\n"
@@ -100,10 +102,28 @@ static size_t payload_source(char *ptr, size_t size, size_t nmemb, void *userp)
  
   return 0;
 }
- 
-int send_mail(char *msg, char *sndr_mail, char* sndr_passw, char *recpt_mail, int port, int use_ssl, char* time, char* subject)
+
+/*
+ * Adds all the recipients to the curl_slist variable
+ * supplied to the curl_easy_opt function
+ */
+int add_all_recipients(struct curl_slist **recipients, node *ev_recp){
+  int rc = 0;
+
+  for(node *iter = ev_recp; iter != NULL; iter = iter->next){
+    /*
+     * TODO: add checking for char *
+     * just change the list struct
+     */
+    curl_slist_append(*recipients, (char *)iter->obj);
+  }
+
+  return rc;
+}
+
+int send_mail(char *msg, char *sndr_mail, char* sndr_passw, node *recp_list, int port, int use_ssl, char* time, char* subject)
 {
-  syslog(LOG_DEBUG, "To funcion send_mail was passed: %s %s %s %d %d", msg, sndr_mail, recpt_mail, port, use_ssl);
+  syslog(LOG_DEBUG, "To funcion send_mail was passed: %s %s %s %d %d", msg, sndr_mail, (char *)(*recp_list).obj, port, use_ssl);
 
   CURL *curl;
   CURLcode res = CURLE_OK;
@@ -113,12 +133,12 @@ int send_mail(char *msg, char *sndr_mail, char* sndr_passw, char *recpt_mail, in
   curl = curl_easy_init();
   if(curl) {
     /*
-     * TODO: 30 is arbitrary
+     * TODO: 50 is arbitrary
      * need to do a bit more checking
      */
 
-    char server_addr[30];
-    sprintf(server_addr, "smtp.mailgun.org:%d", port);
+    char server_addr[50];
+    snprintf(server_addr, 50, "smtp.mailgun.org:%d", port);
 
     /* This is the URL for your mailserver */
     curl_easy_setopt(curl, CURLOPT_URL, server_addr);
@@ -146,25 +166,8 @@ int send_mail(char *msg, char *sndr_mail, char* sndr_passw, char *recpt_mail, in
     /* Add two recipients, in this particular case they correspond to the
      * To: and Cc: addressees in the header, but they could be any kind of
      * recipient. */
-    recipients = curl_slist_append(recipients, recpt_mail);
+    add_all_recipients(&recipients, recp_list);
     curl_easy_setopt(curl, CURLOPT_MAIL_RCPT, recipients);
-  
-    /* ================
-     * MY OWN CODE
-     * ================ */
-
-    /*
-     * TODO: update this for every recipient in the list
-     * TODO: ALSO add a function to add recipients
-     */ 
-
-    create_pbody(msg);
-    create_pheader("2021-10-10", sndr_mail, recpt_mail, "example msg");
-    update_payload();
-
-    /* ================
-     * MY OWN CODE
-     * ================ */
 
     /* We are using a callback function to specify the payload (the headers and
      * body of the message). You could just use the CURLOPT_READDATA option to
@@ -172,6 +175,24 @@ int send_mail(char *msg, char *sndr_mail, char* sndr_passw, char *recpt_mail, in
     curl_easy_setopt(curl, CURLOPT_READFUNCTION, payload_source);
     curl_easy_setopt(curl, CURLOPT_READDATA, &upload_ctx);
     curl_easy_setopt(curl, CURLOPT_UPLOAD, 1L);
+  
+    /* ================
+     * MY OWN CODE
+     * ================ */
+
+    /*
+     * TODO: update this for every recipient in the list
+     * update header for every recipient
+     * 
+     */ 
+
+    create_pbody(msg);
+    create_pheader(time, sndr_mail, "domantas231@gmail.com", subject);
+    update_payload();
+
+    /* ================
+     * MY OWN CODE
+     * ================ */
  
     /* Send the message */
     res = curl_easy_perform(curl);
