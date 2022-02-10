@@ -19,8 +19,8 @@ void sig_handler(int signo) {
 int setup_signals(struct mosquitto *m){
     memset(&action, 0, sizeof(struct sigaction));
     action.sa_handler = sig_handler;
-    sigaction(SIGTERM, &action, NULL);
     sigaction(SIGINT, &action, NULL);
+    sigaction(SIGTERM, &action, NULL);
 
     mosq = m;
 }

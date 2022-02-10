@@ -115,7 +115,7 @@ int add_all_recipients(struct curl_slist **recipients, node *ev_recp){
      * TODO: add checking for char *
      * just change the list struct
      */
-    curl_slist_append(*recipients, (char *)iter->obj);
+    *recipients = curl_slist_append(*recipients, (char *)iter->obj);
   }
 
   return rc;

@@ -40,3 +40,9 @@ error_t parse_opt (int key, char *arg, struct argp_state *state){
 
     return 0;
 }
+
+int parse_options(int argc, char *argv[], struct arguments *args){
+	syslog(LOG_DEBUG, "Parsing options");
+    struct argp argp = {options, parse_opt, NULL, doc};
+    argp_parse(&argp, argc, argv, 0, 0, &args);
+}

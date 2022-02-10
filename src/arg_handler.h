@@ -17,5 +17,6 @@ extern const char args_doc[];
 extern struct argp_option options[];
 
 error_t parse_opt (int key, char *arg, struct argp_state *state);
+int parse_options(int argc, char *argv[], struct argp_option *args);
 
 #endif

@@ -5,7 +5,7 @@
 
 #include "msg_db_handler.h"
 #include "linked_list.h"
-#include "load_events.h"
+#include "load_configs.h"
 #include "email_handler.h"
 
 int find_by_topic(char *topic, node *events, struct event **ev_result){
@@ -25,7 +25,7 @@ int find_by_topic(char *topic, node *events, struct event **ev_result){
 /*
  * TODO: Add a check for whether the string is in json format
  */
-int parse_value(struct event ev, char *payload, char **value){
+int parse_value(struct event ev, char *payload, char *value){
     int rc = 0;
     
     json_object *jso = json_tokener_parse(payload);
@@ -40,7 +40,7 @@ int parse_value(struct event ev, char *payload, char **value){
         rc = 1;
     }
 
-    strcpy(*value, prsd_val);
+    strcpy(value, prsd_val);
 
     json_object_put(jso);
     return rc;
@@ -123,19 +123,14 @@ int compare_int_msg(struct event ev, char *value, int *res){
 }
 
 /* Callback called when the client receives a message. */
-void on_message(struct mosquitto *mosq, void *obj, const struct mosquitto_message *msg)
-{
+void on_message(struct mosquitto *mosq, void *obj, const struct mosquitto_message *msg){
 	/* This blindly prints the payload, but the payload can be anything so take care. */
 	syslog(LOG_DEBUG, "Received message - topic:%s, qos:%d, payload:%s\n", msg->topic, msg->qos, (char *)msg->payload);
 
-    /*
-     * Save the message to a database
-     */
+    /* save message to database */
     save_message(msg->topic, msg->qos, (char *)msg->payload);
 
-    /*
-     * Parse the events saved in a specific config file
-     */
+    /* TODO: change so that I don't need to parse this every time a message comes */
     node *events = NULL;
     get_events(&events);
 
@@ -158,10 +153,11 @@ void on_message(struct mosquitto *mosq, void *obj, const struct mosquitto_messag
     }
     syslog(LOG_DEBUG, "Found event: %s, with value %s", got_ev->topic, got_ev->value);
     
-    char *value;
-    parse_value(*got_ev, (char *)msg->payload, &value);
-
-    syslog(LOG_DEBUG, "sus");
+    /* 
+     * TODO: change maybe
+     */
+    char value[256];
+    parse_value(*got_ev, (char *)msg->payload, value);
 
     int res;
     compare_int_msg(*got_ev, value, &res);
@@ -179,8 +175,5 @@ void on_message(struct mosquitto *mosq, void *obj, const struct mosquitto_messag
         send_mail("Warning: something:)", got_ev->sender, got_ev->sender_passw, got_ev->recp_list, 25, 0, time, "example message");
     }
 
-    /*
-     * Free all the allocated events
-     */
     list_delall(&events);
 }
