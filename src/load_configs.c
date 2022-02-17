@@ -34,15 +34,19 @@ static void close_uci_ctx(){
 
 static int assign_event_value(struct event *event, struct uci_option *option, char *option_name){
     STR_EQUALS("topic", option_name) STR_ASSIGN((*event).topic, option->v.string);
+    else STR_EQUALS("paramKey", option_name) STR_ASSIGN((*event).param_key, option->v.string);
+    else STR_EQUALS("value", option_name) STR_ASSIGN((*event).value, option->v.string);
+    else STR_EQUALS("compare", option_name) STR_ASSIGN((*event).compare, option->v.string);
+    else STR_EQUALS("sender", option_name) STR_ASSIGN((*event).sender, option->v.string);
+    else STR_EQUALS("senderPassw", option_name) STR_ASSIGN((*event).sender_passw, option->v.string);
+    else STR_EQUALS("emailMsg", option_name) STR_ASSIGN((*event).email_msg, option->v.string);
+    else STR_EQUALS("emailSubject", option_name) STR_ASSIGN((*event).email_subject, option->v.string);
     else STR_EQUALS("dataType", option_name){
         STR_EQUALS("number", option->v.string) (*event).dt = NUMBER;
         else {
             (*event).dt = STRING;
         }
     }
-    else STR_EQUALS("paramKey", option_name) STR_ASSIGN((*event).param_key, option->v.string);
-    else STR_EQUALS("value", option_name) STR_ASSIGN((*event).value, option->v.string);
-    else STR_EQUALS("compare", option_name) STR_ASSIGN((*event).compare, option->v.string);
     else STR_EQUALS("recipient", option_name){
         struct uci_element *el;
         uci_foreach_element(&option->v.list, el){
@@ -55,10 +59,6 @@ static int assign_event_value(struct event *event, struct uci_option *option, ch
             list_addback_str(&event->recp_list, el_tmp);
         }
     }
-    else STR_EQUALS("sender", option_name) STR_ASSIGN((*event).sender, option->v.string);
-    else STR_EQUALS("senderPassw", option_name) STR_ASSIGN((*event).sender_passw, option->v.string);
-    else STR_EQUALS("emailMsg", option_name) STR_ASSIGN((*event).email_msg, option->v.string);
-    else STR_EQUALS("emailSubject", option_name) STR_ASSIGN((*event).email_subject, option->v.string);
     else syslog(LOG_WARNING, "A non existant option was parsed: %s", option_name);
 }
 
@@ -73,6 +73,7 @@ int get_events(ev_node **events){
         /* temporary node and event struct, used to store iterator data */
         ev_node *ntmp = malloc(sizeof(ev_node));
         struct event *tmp = malloc(sizeof(struct event));
+        tmp->recp_list = NULL;
 
         struct uci_section *section = uci_to_section(i);
         uci_foreach_element(&section->options, j)
@@ -80,18 +81,10 @@ int get_events(ev_node **events){
             struct uci_option *option = uci_to_option(j);
             char *option_name = option->e.name;
 
-            /* This might be a bit over-engineered */
-            if(option->type == UCI_TYPE_STRING)
-                syslog(LOG_DEBUG, "Got option (string type) name and value: %s %s", option_name, option->v.string);
-
-            // else if(option->type == UCI_TYPE_LIST)
-            //     syslog(LOG_DEBUG, "Got option (list type) name and value: %s %s", option_name, option->v.list);
-
             assign_event_value(tmp, option, option_name);
-            tmp->recp_list = NULL;
         }
         ntmp->next = NULL;
-        ntmp->obj = *tmp;
+        ntmp->obj = tmp;
 
         list_addback_ev(events, ntmp);
     }
@@ -132,7 +125,7 @@ int get_topics(tp_node **topics){
         }   
 
         ntmp->next = NULL;
-        ntmp->obj = *tmp;
+        ntmp->obj = tmp;
 
         list_addback_tp(topics, ntmp);
     }
@@ -142,14 +135,15 @@ int get_topics(tp_node **topics){
 
 int assign_ev_to_tp(tp_node **topics, ev_node *events){
     for(tp_node *tp_iter = *topics; tp_iter != NULL; tp_iter = tp_iter->next){
-        char *tp_name = tp_iter->obj.name;
+        char *tp_name = tp_iter->obj->name;
 
+        /* TODO: this may cause leaks, as unassigned nodes don't get freed */ 
         for(ev_node *ev_iter = events; ev_iter != NULL; ev_iter = ev_iter->next){
-            if(strcmp(tp_name, ev_iter->obj.topic) == 0){
+            if(strcmp(tp_name, ev_iter->obj->topic) == 0){
                 /* TODO: check whether this actually works;
                    maybe also add deleting, so that you don't
                    iterate through the same elements twice */
-                list_addback_ev(&(tp_iter->obj.events), ev_iter);
+                list_addback_ev(&(tp_iter->obj->events), ev_iter);
             }
         }
     }

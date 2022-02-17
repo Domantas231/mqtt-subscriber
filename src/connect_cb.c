@@ -18,7 +18,7 @@ int subscribe_every_topic(struct mosquitto *mosq, tp_node *topics){
 		* connection drops and is automatically resumed by the client, then the
 		* subscriptions will be recreated when the client reconnects. --- VERY GOOD
 		*/
-        struct topic *tpcm = &iter->obj;
+        struct topic *tpcm = iter->obj;
 
 		syslog(LOG_INFO, "Trying to subscribe to %s with qos %d", tpcm->name, tpcm->qos);
 		rc = mosquitto_subscribe(mosq, NULL, tpcm->name, tpcm->qos);
@@ -28,7 +28,6 @@ int subscribe_every_topic(struct mosquitto *mosq, tp_node *topics){
 		}
 	}
 
-    list_delall_tp(&topics);
 	return rc;
 }
 

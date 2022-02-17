@@ -40,7 +40,7 @@ struct event {
 typedef struct ev_node {
     struct ev_node *next;
 
-    struct event obj;
+    struct event *obj;
 } ev_node;
 
 /* ======================
@@ -56,7 +56,7 @@ struct topic {
 typedef struct tp_node {
     struct tp_node *next;
 
-    struct topic obj;
+    struct topic *obj;
 } tp_node;
 
 /* TODO: fix this mess */

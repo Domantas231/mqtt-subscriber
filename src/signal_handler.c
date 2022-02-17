@@ -4,15 +4,11 @@
 
 #include "signal_handler.h"
 
-volatile sig_atomic_t daemonise = 1;
-
 struct sigaction action;
 
 struct mosquitto *mosq;
 
 void sig_handler(int signo) {
-    daemonise = 0;
-
     mosquitto_disconnect(mosq);
 }
 

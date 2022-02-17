@@ -28,6 +28,8 @@ void list_delall_ev(ev_node **head){
         temp = *head;
         *head = (*head)->next;
 
+        list_delall_str(&temp->obj->recp_list);
+        free(temp->obj);
         free(temp);
     }
 }
@@ -51,6 +53,8 @@ void list_delall_tp(tp_node **head){
         temp = *head;
         *head = (*head)->next;
 
+        list_delall_ev(&temp->obj->events);
+        free(temp->obj);
         free(temp);
     }
 }
@@ -74,6 +78,7 @@ void list_delall_str(str_node **head){
         temp = *head;
         *head = (*head)->next;
 
+        free(temp->obj);
         free(temp);
     }
 }

@@ -8,6 +8,10 @@
 #include "load_configs.h"
 #include "email_handler.h"
 
+/* 
+ * TODO: change atoi() to strtol or strtod
+ */
+
 #define INT_COMPARE(field, cmp_type, msg_value, tp_value, res)           \
             if(strcmp(field, "cmp_type") == 0){                \
                 if(atoi(value) cmp_type atoi(ev.value)){                 \
@@ -23,10 +27,10 @@
 
 int find_by_topic(char *topic, tp_node *topics, struct topic **tp_result){
     for(tp_node *iter = topics; iter != NULL; iter = iter->next){
-        struct topic tmp = iter->obj;
+        struct topic *tmp = iter->obj;
 
-        if(strcmp(topic, tmp.name) == 0){
-            *tp_result = &tmp;
+        if(strcmp(topic, tmp->name) == 0){
+            *tp_result = tmp;
             return 0;
         }
     }
@@ -38,12 +42,12 @@ int find_by_topic(char *topic, tp_node *topics, struct topic **tp_result){
 /*
  * TODO: Add a check for whether the string is in json format
  */
-int parse_value(struct event ev, char *payload, char *value){
+int parse_value(struct event *ev, char *payload, char *value){
     int rc = 0;
     
     json_object *jso = json_tokener_parse(payload);
     syslog(LOG_DEBUG, "Tokener got - %s", json_object_to_json_string_ext(jso, 0));
-    json_object *topic = json_object_object_get(jso, ev.param_key);
+    json_object *topic = json_object_object_get(jso, ev->param_key);
 
     char const *prsd_val = json_object_to_json_string_ext(topic, 0);
     if(prsd_val == NULL) rc = 1;
@@ -83,12 +87,12 @@ int eval_events(struct topic *tp, char *payload){
         parse_value(iter->obj, payload, value);
 
         int res = 0;
-        if(iter->obj.dt == NUMBER) compare_int_msg(iter->obj, value, &res);
-        else if(iter->obj.dt == STRING) compare_str_msg(iter->obj, value, &res);
+        if(iter->obj->dt == NUMBER) compare_int_msg(*iter->obj, value, &res);
+        else if(iter->obj->dt == STRING) compare_str_msg(*iter->obj, value, &res);
         syslog(LOG_DEBUG, "Comparing returned %d", res);
 
         syslog(LOG_DEBUG, "Trying to send notification email");
-        if(!res) send_mail(iter->obj.email_msg, iter->obj.sender, iter->obj.sender_passw, iter->obj.recp_list, 25, 0, iter->obj.email_subject);
+        if(!res) send_mail(iter->obj->email_msg, iter->obj->sender, iter->obj->sender_passw, iter->obj->recp_list, 25, 0, iter->obj->email_subject);
     }
 }
 
@@ -102,7 +106,7 @@ void on_message(struct mosquitto *mosq, void *obj, const struct mosquitto_messag
     save_message(msg->topic, msg->qos, (char *)msg->payload);
 
     /* get the topics from the mosq object */
-    struct tp_node *topics = (struct tp_node *)obj; 
+    struct tp_node *topics = obj;
 
     /*
      * TODO: need to fix the function below
@@ -119,6 +123,4 @@ void on_message(struct mosquitto *mosq, void *obj, const struct mosquitto_messag
     syslog(LOG_DEBUG, "Found topic: %s", got_tp->name);
     
     eval_events(got_tp, (char *)msg->payload);
-
-    list_delall_tp(&topics);
 }

@@ -20,8 +20,11 @@ int main(int argc, char *argv[])
 	struct tp_node *topics = NULL;
 	load_topics(&topics);
 
-	struct mosquitto *mosq;
-	if((rc = configure_mosq(mosq, argc, argv, topics)) != MOSQ_ERR_SUCCESS){
+	/* Required(?) before calling other mosquitto functions */
+    mosquitto_lib_init();
+
+	struct mosquitto *mosq = NULL;
+	if((rc = configure_mosq(&mosq, argc, argv, topics)) != MOSQ_ERR_SUCCESS){
 		goto cleanup;
 	}
 
@@ -36,10 +39,6 @@ int main(int argc, char *argv[])
 	 * TODO: Maybe there is a way to make this cleaner
 	 * by not having almost the same 2 functions right next to each other
 	 */
-	close_db();
-	mosquitto_lib_cleanup();
-	mosquitto_destroy(mosq);
-	exit(EXIT_SUCCESS);
 
 	cleanup:
 		syslog(LOG_INFO, "Cleaning up program");
@@ -47,5 +46,8 @@ int main(int argc, char *argv[])
 
 		mosquitto_destroy(mosq);
 		mosquitto_lib_cleanup();
+
+		list_delall_tp(&topics);
+
 		exit(EXIT_FAILURE);
 }

@@ -41,7 +41,8 @@ int save_message(char *topic, int qos, char *payload){
     rc = sqlite3_exec(DB, query, NULL, NULL, &err);
     if(rc != SQLITE_OK)
         syslog(LOG_WARNING, "Can't insert new message: %s \n", err);
-        
+    
+    sqlite3_free(err);
     return 0;
 }
 
