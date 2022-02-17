@@ -61,7 +61,7 @@ static int create_pbody(char *msg){
   snprintf(payload_body, 1024, "%s\r\n", msg);
 }
 
-static void create_pheader(char *sndr_email, char *recpt_email, char *subject){
+static void create_pheader(char *sndr_email, str_node *recpt_email, char *subject){
   syslog(LOG_DEBUG, "Updating the payload header");
 
     /*
@@ -71,6 +71,12 @@ static void create_pheader(char *sndr_email, char *recpt_email, char *subject){
   char time[26];
   curr_time(time, 26);
 
+  char to_email[2048];
+
+  for(str_node *iter = recpt_email; iter != NULL; iter = iter->next){
+    strcat(to_email, iter->obj);
+  }
+
   snprintf(payload_header, 1024,
   "Date: %s +1100\r\n"
   "To: %s\r\n"
@@ -79,7 +85,7 @@ static void create_pheader(char *sndr_email, char *recpt_email, char *subject){
   "rfcpedant.example.org>\r\n"
   "Subject: %s\r\n"
   "\r\n", /* empty line to divide headers from body, see RFC5322 */
-  time, recpt_email, sndr_email, subject);
+  time, to_email, sndr_email, subject);
 }
 
 struct upload_status {

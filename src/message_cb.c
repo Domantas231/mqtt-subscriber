@@ -12,15 +12,14 @@
  * TODO: change atoi() to strtol or strtod
  */
 
-#define INT_COMPARE(field, cmp_type, msg_value, tp_value, res)           \
-            if(strcmp(field, "cmp_type") == 0){                \
-                if(atoi(value) cmp_type atoi(ev.value)){                 \
-                    *res = 0;                                            \
-                } else *res = 1;                                         \
+#define INT_COMPARE(field, cmp_type, msg_value, tp_value, res)            \
+            if(strcmp(field, "cmp_type") == 0){                           \
+                if(atoi(value) cmp_type atoi(ev.value)) *res = 0;         \
+                else *res = 1;                                            \
             }
 
-#define STR_COMPARE(field, cmp_type, msg_value, tp_value, res)           \
-            if(strcmp(field, "cmp_type") == 0){                \
+#define STR_COMPARE(field, cmp_type, msg_value, tp_value, res)            \
+            if(strcmp(field, "cmp_type") == 0){                           \
                 if(msg_value cmp_type tp_value) *res = 0;                 \
                 else *res = 1;                                            \
             }
