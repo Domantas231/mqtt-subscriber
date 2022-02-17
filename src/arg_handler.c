@@ -23,15 +23,15 @@ error_t parse_opt (int key, char *arg, struct argp_state *state){
     switch (key)
     {
     case 'c':
-        strncpy(args->ca_path, arg, N);
+        strncpy(args->ca_path, arg, Nopt);
         break;
 
     case 'u':
-        strncpy(args->user, arg, N);
+        strncpy(args->user, arg, Nopt);
         break;
 
     case 'p':
-        strncpy(args->pass, arg, N);
+        strncpy(args->pass, arg, Nopt);
         break;
 
     default:

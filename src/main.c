@@ -16,9 +16,12 @@ int main(int argc, char *argv[])
 	/* open the data base to save received messages */
 	open_db();
 
-	struct mosquitto *mosq;
+	/* load topics and events, then pass it as a void pointer */
+	struct tp_node *topics = NULL;
+	load_topics(&topics);
 
-	if((rc = configure_mosq(mosq, argc, argv)) != MOSQ_ERR_SUCCESS){
+	struct mosquitto *mosq;
+	if((rc = configure_mosq(mosq, argc, argv, topics)) != MOSQ_ERR_SUCCESS){
 		goto cleanup;
 	}
 

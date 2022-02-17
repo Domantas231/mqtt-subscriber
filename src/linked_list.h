@@ -1,14 +1,18 @@
 #ifndef LINKED_LIST_H
 #define LINKED_LIST_H
 
-typedef struct node {
-    /*
-     * TODO: How safe is this??
-     */
-    void *obj;
+#include "load_configs.h"
 
-    struct node *next; 
-}node;
+typedef struct node {
+    struct node *next;
+
+    /* big bren */ 
+    union obj {
+        char *string;
+        struct event *ev;
+        struct topic *tp;
+    } obj;
+} node;
 
 void list_addback(node **head, node *new);
 int list_add(node **head, node *new, int k);

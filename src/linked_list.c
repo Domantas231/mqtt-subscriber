@@ -3,92 +3,77 @@
 #include <string.h>
 #include <memory.h>
 
-#include "linked_list.h"
+#include "load_configs.h"
 
-void list_addback(node **head, node *new){
+/* 
+ * TODO: There has to be a better way to do this
+ */
+
+void list_addback_ev(ev_node **head, ev_node *new){
     if(*head == NULL){
         *head = new;
         return;
     }
 
-    node *iter = *head;
+    ev_node *iter = *head;
     while(iter->next != NULL) iter = iter->next;
 
     iter->next = new;
 }
 
-int list_add(node **head, node *new, int k){
-    if(k < 0) return 1;
-
-    if(k == 0) {
-        new->next = *head;
-        *head = new;
-        return 0;
-    }
-
-    node *iter = *head;
-    int i = 0;
-    while(i < (k - 1) && iter != NULL) {
-        iter = iter->next;
-        i++;
-    }
-
-    node *temp = iter->next;
-    iter->next = new;
-    new->next = temp;
-
-    return 0;
-}
-
-void list_delall(node **head){
-    node *temp;
+void list_delall_ev(ev_node **head){
+    ev_node *temp;
 
     while(*head != NULL){
         temp = *head;
         *head = (*head)->next;
 
-        free(temp->obj);
         free(temp);
     }
 }
 
-node* list_getid(node *head, int k){
-    if(k < 0) return NULL;
-
-    node *iter = head;
-    int i = 0;
-    
-    while(i < k && iter != NULL){
-        iter = iter->next;
-        i++;
+void list_addback_tp(tp_node **head, tp_node *new){
+    if(*head == NULL){
+        *head = new;
+        return;
     }
 
-    return iter;
+    tp_node *iter = *head;
+    while(iter->next != NULL) iter = iter->next;
+
+    iter->next = new;
 }
 
-int list_delid(node **head, int k){
-    if(k < 0) return 1;
+void list_delall_tp(tp_node **head){
+    tp_node *temp;
 
-    if(k == 0){
-        node *tmp = *head;
+    while(*head != NULL){
+        temp = *head;
         *head = (*head)->next;
 
-        if(tmp != NULL) free(tmp);
-        return 0;
+        free(temp);
     }
-    
-    node *iter = *head;
-    int i = 0;
-    
-    while(i < (k - 1) && iter != NULL){
-        iter = iter->next;
-        i++;
+}
+
+void list_addback_str(str_node **head, str_node *new){
+    if(*head == NULL){
+        *head = new;
+        return;
     }
-    
-    node *tmp = iter->next;
-    iter->next = tmp->next;
 
-    if(tmp != NULL) free(tmp);
+    str_node *iter = *head;
+    while(iter->next != NULL) iter = iter->next;
 
-    return 0;
+    iter->next = new;
+}
+
+void list_delall_str(str_node **head){
+    str_node *temp;
+
+    while(*head != NULL){
+        temp = *head;
+        *head = (*head)->next;
+
+        free(temp);
+    }
 }

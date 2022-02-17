@@ -8,12 +8,25 @@
 #include "load_configs.h"
 #include "email_handler.h"
 
-int find_by_topic(char *topic, node *events, struct event **ev_result){
-    for(node *iter = events; iter != NULL; iter = iter->next){
-        struct event *tmp = (struct event *)iter->obj;
+#define INT_COMPARE(field, cmp_type, msg_value, tp_value, res)           \
+            if(strcmp(field, "cmp_type") == 0){                \
+                if(atoi(value) cmp_type atoi(ev.value)){                 \
+                    *res = 0;                                            \
+                } else *res = 1;                                         \
+            }
 
-        if(strcmp(topic, tmp->topic) == 0){
-            *ev_result = tmp;
+#define STR_COMPARE(field, cmp_type, msg_value, tp_value, res)           \
+            if(strcmp(field, "cmp_type") == 0){                \
+                if(msg_value cmp_type tp_value) *res = 0;                 \
+                else *res = 1;                                            \
+            }
+
+int find_by_topic(char *topic, tp_node *topics, struct topic **tp_result){
+    for(tp_node *iter = topics; iter != NULL; iter = iter->next){
+        struct topic tmp = iter->obj;
+
+        if(strcmp(topic, tmp.name) == 0){
+            *tp_result = &tmp;
             return 0;
         }
     }
@@ -32,13 +45,8 @@ int parse_value(struct event ev, char *payload, char *value){
     syslog(LOG_DEBUG, "Tokener got - %s", json_object_to_json_string_ext(jso, 0));
     json_object *topic = json_object_object_get(jso, ev.param_key);
 
-    /*
-     * TODO: Fix this error checking, cause it dont work
-     */
     char const *prsd_val = json_object_to_json_string_ext(topic, 0);
-    if(prsd_val == NULL){
-        rc = 1;
-    }
+    if(prsd_val == NULL) rc = 1;
 
     strcpy(value, prsd_val);
 
@@ -47,20 +55,8 @@ int parse_value(struct event ev, char *payload, char *value){
 }
 
 int compare_str_msg(struct event ev, char *value, int *res){
-    if(strcmp(ev.compare, "==") == 0){
-        if(strcmp(ev.value, value) == 0){
-            *res = 0;
-        }
-        else
-            *res = 1;
-    }
-    else if(strcmp(ev.compare, "!=") == 0){
-        if(strcmp(ev.value, value) == 0){
-            *res = 0;
-        }
-        else
-            *res = 1;
-    }
+    STR_COMPARE(ev.compare, ==, value, ev.value, res)
+    else STR_COMPARE(ev.compare, !=, value, ev.value, res)
 
     return 0;
 }
@@ -69,58 +65,33 @@ int compare_str_msg(struct event ev, char *value, int *res){
  * TODO: Make a separate function for ints and strings
  */
 int compare_int_msg(struct event ev, char *value, int *res){
-    /*
-     * TODO: Fix this horrendous mess
-     */
-    
-    if(strcmp(ev.compare, ">") == 0){
-        if(atoi(value) > atoi(ev.value)){
-            *res = 0;
-        }
-        else
-            *res = 1;
-    }
-    else if(strcmp(ev.compare, "<") == 0){
-        if(atoi(value) < atoi(ev.value)){
-            *res = 0;
-        }
-        else
-            *res = 1;
-    }
-    else if(strcmp(ev.compare, "==") == 0){
-        if(atoi(value) == atoi(ev.value)){
-            *res = 0;
-        }
-        else
-            *res = 1;
-    }
-    else if(strcmp(ev.compare, "!=") == 0){
-        if(atoi(value) != atoi(ev.value)){
-            *res = 0;
-        }
-        else
-            *res = 1;
-    }
-    else if(strcmp(ev.compare, "<=") == 0){
-        if(atoi(value) <= atoi(ev.value)){
-            *res = 0;
-        }
-        else
-            *res = 1;
-    }
-    else if(strcmp(ev.compare, ">=") == 0){
-        if(atoi(value) >= atoi(ev.value)){
-            *res = 0;
-        }
-        else
-            *res = 1;
-    }
-    else {
-        return 1;
-    }
+    INT_COMPARE(ev.compare, >, value, ev.value, res)
+    INT_COMPARE(ev.compare, <, value, ev.value, res)
+    INT_COMPARE(ev.compare, ==, value, ev.value, res)
+    INT_COMPARE(ev.compare, !=, value, ev.value, res)
+    INT_COMPARE(ev.compare, <=, value, ev.value, res)
+    INT_COMPARE(ev.compare, >=, value, ev.value, res)
+    else return 1;
 
     return 0;
 }
+
+int eval_events(struct topic *tp, char *payload){
+    for(struct ev_node *iter = tp->events; iter != NULL; iter = iter->next){
+        /* TODO: potentially is too much space for just a short? value */
+        char value[256];
+        parse_value(iter->obj, payload, value);
+
+        int res = 0;
+        if(iter->obj.dt == NUMBER) compare_int_msg(iter->obj, value, &res);
+        else if(iter->obj.dt == STRING) compare_str_msg(iter->obj, value, &res);
+        syslog(LOG_DEBUG, "Comparing returned %d", res);
+
+        syslog(LOG_DEBUG, "Trying to send notification email");
+        if(!res) send_mail(iter->obj.email_msg, iter->obj.sender, iter->obj.sender_passw, iter->obj.recp_list, 25, 0, iter->obj.email_subject);
+    }
+}
+
 
 /* Callback called when the client receives a message. */
 void on_message(struct mosquitto *mosq, void *obj, const struct mosquitto_message *msg){
@@ -130,50 +101,24 @@ void on_message(struct mosquitto *mosq, void *obj, const struct mosquitto_messag
     /* save message to database */
     save_message(msg->topic, msg->qos, (char *)msg->payload);
 
-    /* TODO: change so that I don't need to parse this every time a message comes */
-    node *events = NULL;
-    get_events(&events);
-
-    /*
-     * TODO: Check whether things like compare "<" two strings
-     * doesn't happen, but I don't know if this is truly needed
-     * and if it wouldn't be better to have it in a different spot
-     */
-
-    struct event *got_ev = NULL;
+    /* get the topics from the mosq object */
+    struct tp_node *topics = (struct tp_node *)obj; 
 
     /*
      * TODO: need to fix the function below
      * so that i returns a 0 on successfully
      * finding the event by topic
+     * and make it compatibale with the new structure of 
+     * topics 
      */ 
 
-    if(find_by_topic(msg->topic, events, &got_ev)){
+    struct topic *got_tp = NULL;
+    if(find_by_topic(msg->topic, topics, &got_tp)){
         return;
     }
-    syslog(LOG_DEBUG, "Found event: %s, with value %s", got_ev->topic, got_ev->value);
+    syslog(LOG_DEBUG, "Found topic: %s", got_tp->name);
     
-    /* 
-     * TODO: change maybe
-     */
-    char value[256];
-    parse_value(*got_ev, (char *)msg->payload, value);
+    eval_events(got_tp, (char *)msg->payload);
 
-    int res;
-    compare_int_msg(*got_ev, value, &res);
-
-    /*
-     * 26 is the exact number of characters
-     * in a string that contains the time/date.
-     */
-    char time[26];
-    curr_time(time, 26);
-
-    syslog(LOG_DEBUG, "Comparing returned %d", res);
-    if(!res){
-        syslog(LOG_DEBUG, "Trying to send notification email");
-        send_mail("Warning: something:)", got_ev->sender, got_ev->sender_passw, got_ev->recp_list, 25, 0, time, "example message");
-    }
-
-    list_delall(&events);
+    list_delall_tp(&topics);
 }

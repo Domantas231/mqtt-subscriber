@@ -1,4 +1,5 @@
 #include <syslog.h>
+#include <string.h>
 
 #include "conf_mosq.h"
 #include "arg_handler.h"
@@ -6,7 +7,7 @@
 #include "subscribe_cb.h"
 #include "message_cb.h"
 
-int configure_mosq(struct mosquitto *mosq, int argc, char *argv[]){
+int configure_mosq(struct mosquitto *mosq, int argc, char *argv[], struct tp_node *topics){
     int rc = 0;
 
     /* Required(?) before calling other mosquitto functions */
@@ -16,7 +17,7 @@ int configure_mosq(struct mosquitto *mosq, int argc, char *argv[]){
     parse_options(argc, argv, &args);
 
     /* Create a new client instance. */
-	mosq = mosquitto_new(NULL, true, NULL);
+	mosq = mosquitto_new(NULL, true, topics);
 	if(mosq == NULL){
 		syslog(LOG_ERR, "Out of memory, failed to start mosquitto context.\n");
 		return 1;

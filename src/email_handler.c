@@ -31,6 +31,7 @@
 #include <syslog.h>
  
 #include "linked_list.h"
+#include "msg_db_handler.h"
 
 /*
  * For an SMTP example using the multi interface please see smtp-multi.c.
@@ -60,8 +61,15 @@ static int create_pbody(char *msg){
   snprintf(payload_body, 1024, "%s\r\n", msg);
 }
 
-static void create_pheader(char *date, char *sndr_email, char *recpt_email, char *subject){
+static void create_pheader(char *sndr_email, char *recpt_email, char *subject){
   syslog(LOG_DEBUG, "Updating the payload header");
+
+    /*
+    * 26 is the exact number of characters
+    * in a string that contains the time/date.
+    */
+  char time[26];
+  curr_time(time, 26);
 
   snprintf(payload_header, 1024,
   "Date: %s +1100\r\n"
@@ -71,7 +79,7 @@ static void create_pheader(char *date, char *sndr_email, char *recpt_email, char
   "rfcpedant.example.org>\r\n"
   "Subject: %s\r\n"
   "\r\n", /* empty line to divide headers from body, see RFC5322 */
-  date, recpt_email, sndr_email, subject);
+  time, recpt_email, sndr_email, subject);
 }
 
 struct upload_status {
@@ -107,23 +115,20 @@ static size_t payload_source(char *ptr, size_t size, size_t nmemb, void *userp)
  * Adds all the recipients to the curl_slist variable
  * supplied to the curl_easy_opt function
  */
-int add_all_recipients(struct curl_slist **recipients, node *ev_recp){
+int add_all_recipients(struct curl_slist **recipients, str_node *ev_recp){
   int rc = 0;
 
-  for(node *iter = ev_recp; iter != NULL; iter = iter->next){
-    /*
-     * TODO: add checking for char *
-     * just change the list struct
-     */
-    *recipients = curl_slist_append(*recipients, (char *)iter->obj);
+  for(str_node *iter = ev_recp; iter != NULL; iter = iter->next)
+  {
+    *recipients = curl_slist_append(*recipients, iter->obj);
   }
 
   return rc;
 }
 
-int send_mail(char *msg, char *sndr_mail, char* sndr_passw, node *recp_list, int port, int use_ssl, char* time, char* subject)
+int send_mail(char *msg, char *sndr_mail, char* sndr_passw, str_node *recp_list, int port, int use_ssl, char* subject)
 {
-  syslog(LOG_DEBUG, "To funcion send_mail was passed: %s %s %s %d %d", msg, sndr_mail, (char *)(*recp_list).obj, port, use_ssl);
+  syslog(LOG_DEBUG, "To funcion send_mail was passed: %s %s %s %d %d", msg, sndr_mail, recp_list->obj, port, use_ssl);
 
   CURL *curl;
   CURLcode res = CURLE_OK;
@@ -187,7 +192,7 @@ int send_mail(char *msg, char *sndr_mail, char* sndr_passw, node *recp_list, int
      */ 
 
     create_pbody(msg);
-    create_pheader(time, sndr_mail, "domantas231@gmail.com", subject);
+    create_pheader(sndr_mail, "domantas231@gmail.com", subject);
     update_payload();
 
     /* ================
