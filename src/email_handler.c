@@ -34,14 +34,6 @@
 #include "msg_db_handler.h"
 
 /*
- * For an SMTP example using the multi interface please see smtp-multi.c.
- */
- 
-/* The libcurl options want plain addresses, the viewable headers in the mail
- * can very well get a full name as well.
- */
-
-/*
  * Probably need to fix this up a bit, so bigger messages can be stored
  * Arbitrary size numbers
  */
@@ -64,18 +56,14 @@ static int create_pbody(char *msg){
 static void create_pheader(char *sndr_email, str_node *recpt_email, char *subject){
   syslog(LOG_DEBUG, "Updating the payload header");
 
-    /*
-    * 26 is the exact number of characters
-    * in a string that contains the time/date.
-    */
   char time[26];
   curr_time(time, 26);
 
   char to_email[2048];
 
-  for(str_node *iter = recpt_email; iter != NULL; iter = iter->next){
-    strcat(to_email, iter->obj);
-  }
+  // for(str_node *iter = recpt_email; iter != NULL; iter = iter->next){
+  //   strcat(to_email, iter->obj);
+  // }
 
   snprintf(payload_header, 1024,
   "Date: %s +1100\r\n"
@@ -143,67 +131,38 @@ int send_mail(char *msg, char *sndr_mail, char* sndr_passw, str_node *recp_list,
  
   curl = curl_easy_init();
   if(curl) {
-    /*
-     * TODO: 50 is arbitrary
-     * need to do a bit more checking
-     */
-
+    /* TODO: 50 is arbitrary */
     char server_addr[50];
     snprintf(server_addr, 50, "smtp.mailgun.org:%d", port);
-
-    /* This is the URL for your mailserver */
     curl_easy_setopt(curl, CURLOPT_URL, server_addr);
- 
-    /* Note that this option is not strictly required, omitting it will result
-     * in libcurl sending the MAIL FROM command with empty sender data. All
-     * autoresponses should have an empty reverse-path, and should be directed
-     * to the address in the reverse-path which triggered them. Otherwise,
-     * they could cause an endless loop. See RFC 5321 Section 4.5.5 for more
-     * details.
-     */
+
     curl_easy_setopt(curl, CURLOPT_MAIL_FROM, sndr_mail);
     curl_easy_setopt(curl, CURLOPT_USERNAME, sndr_mail);
     curl_easy_setopt(curl, CURLOPT_PASSWORD, sndr_passw);
 
-    /*
-     * Use ssl verification
-     */
+    /* if using ssl verification */ 
     if(use_ssl){
       curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER , 1);
       curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST , 1);
       curl_easy_setopt(curl, CURLOPT_CAINFO , "./ca.cert");
     }
 
-    /* Add two recipients, in this particular case they correspond to the
-     * To: and Cc: addressees in the header, but they could be any kind of
-     * recipient. */
+    /* TODO: might need to add a To: infront of a receiver, otherwise it doesn't transfer */
     add_all_recipients(&recipients, recp_list);
     curl_easy_setopt(curl, CURLOPT_MAIL_RCPT, recipients);
 
-    /* We are using a callback function to specify the payload (the headers and
-     * body of the message). You could just use the CURLOPT_READDATA option to
-     * specify a FILE pointer to read from. */
     curl_easy_setopt(curl, CURLOPT_READFUNCTION, payload_source);
     curl_easy_setopt(curl, CURLOPT_READDATA, &upload_ctx);
     curl_easy_setopt(curl, CURLOPT_UPLOAD, 1L);
   
-    /* ================
-     * MY OWN CODE
-     * ================ */
-
     /*
      * TODO: update this for every recipient in the list
-     * update header for every recipient
-     * 
-     */ 
+     * update header for every recipient 
+     */
 
     create_pbody(msg);
     create_pheader(sndr_mail, "domantas231@gmail.com", subject);
     update_payload();
-
-    /* ================
-     * MY OWN CODE
-     * ================ */
  
     /* Send the message */
     res = curl_easy_perform(curl);
