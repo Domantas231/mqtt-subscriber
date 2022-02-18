@@ -10,7 +10,7 @@
 int configure_mosq(struct mosquitto **mosq, int argc, char *argv[], struct tp_node *topics){
     int rc = 0;
 
-    struct arguments args = {.ca_path = "", .pass = "", .user = ""};;
+    struct arguments args = {.ca_path = "", .pass = "", .user = ""};
     parse_options(argc, argv, &args);
 
     /* Create a new client instance. */

@@ -14,6 +14,7 @@ int main(int argc, char *argv[])
 	int rc;
 
 	/* open the data base to save received messages */
+	/* TODO: do they really want this */
 	open_db();
 
 	/* load topics and events, then pass it as a void pointer */
@@ -34,12 +35,6 @@ int main(int argc, char *argv[])
 	/* main program loop */
 	mosquitto_loop_forever(mosq, -1, 1);
 
-	syslog(LOG_INFO, "Cleaning up program");
-	/*
-	 * TODO: Maybe there is a way to make this cleaner
-	 * by not having almost the same 2 functions right next to each other
-	 */
-
 	cleanup:
 		syslog(LOG_INFO, "Cleaning up program");
 		close_db();
@@ -49,5 +44,5 @@ int main(int argc, char *argv[])
 
 		list_delall_tp(&topics);
 
-		exit(EXIT_FAILURE);
+		exit(EXIT_SUCCESS);
 }

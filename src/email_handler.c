@@ -132,6 +132,7 @@ int send_mail(char *msg, char *sndr_mail, char* sndr_passw, str_node *recp_list,
   curl = curl_easy_init();
   if(curl) {
     /* TODO: 50 is arbitrary */
+    /* TODO: the user might need to specify this n other stuuuff */
     char server_addr[50];
     snprintf(server_addr, 50, "smtp.mailgun.org:%d", port);
     curl_easy_setopt(curl, CURLOPT_URL, server_addr);
