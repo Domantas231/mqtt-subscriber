@@ -1,6 +1,7 @@
 {
     "files.associations": {
         "typeinfo": "c",
-        "subscribe_cb.h": "c"
+        "subscribe_cb.h": "c",
+        "load_topics.h": "c"
     }
 }

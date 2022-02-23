@@ -2,7 +2,7 @@
 #define CONF_MOSQ_H
 
 #include <mosquitto.h>
-#include "load_configs.h"
+#include "load_topics.h"
 
 #define DOMAIN "test.mosquitto.org"
 

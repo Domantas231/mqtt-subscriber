@@ -5,24 +5,9 @@
 
 #include "msg_db_handler.h"
 #include "linked_list.h"
-#include "load_configs.h"
+#include "load_topics.h"
 #include "email_handler.h"
-
-/* 
- * TODO: change atoi() to strtol or strtod
- */
-
-#define INT_COMPARE(field, cmp_type, msg_value, tp_value, res)              \
-            if(strcmp(field, #cmp_type) == 0){                              \
-                if(atoi(value) cmp_type atoi(ev.value)) *res = 0;           \
-                else *res = 1;                                              \
-            }
-
-#define STR_COMPARE(field, cmp_type, msg_value, tp_value, res)              \
-            if(strcmp(field, #cmp_type) == 0){                              \
-                if(strcmp(msg_value, tp_value) cmp_type 0) *res = 0;       \
-                else *res = 1;                                              \
-            }
+#include "compare_msg.h"
 
 int find_by_topic(char *topic, tp_node *topics, struct topic **tp_result){
     for(tp_node *iter = topics; iter != NULL; iter = iter->next){
@@ -63,28 +48,6 @@ int parse_value(struct event *ev, char *payload, char *value){
         return rc;
 }
 
-int compare_str_msg(struct event ev, char *value, int *res){
-    STR_COMPARE(ev.compare, ==, value, ev.value, res)
-    else STR_COMPARE(ev.compare, !=, value, ev.value, res)
-
-    return 0;
-}
-
-/*
- * TODO: dont need a res variable, because this function can't break, maybe
- */
-int compare_int_msg(struct event ev, char *value, int *res){
-    INT_COMPARE(ev.compare, >, value, ev.value, res)
-    INT_COMPARE(ev.compare, <, value, ev.value, res)
-    INT_COMPARE(ev.compare, ==, value, ev.value, res)
-    INT_COMPARE(ev.compare, !=, value, ev.value, res)
-    INT_COMPARE(ev.compare, <=, value, ev.value, res)
-    INT_COMPARE(ev.compare, >=, value, ev.value, res)
-    else return 1;
-
-    return 0;
-}
-
 int eval_events(struct topic *tp, char *payload){
     for(struct ev_node *iter = tp->events; iter != NULL; iter = iter->next){
         /* TODO: potentially is too much space for just a short? value */
@@ -123,7 +86,7 @@ void on_message(struct mosquitto *mosq, void *obj, const struct mosquitto_messag
      * and make it compatibale with the new structure of 
      * topics 
      */ 
-
+    
     struct topic *got_tp = NULL;
     if(find_by_topic(msg->topic, topics, &got_tp)){
         return;

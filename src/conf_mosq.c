@@ -21,6 +21,7 @@ int configure_mosq(struct mosquitto **mosq, int argc, char *argv[], struct tp_no
 	}
 
     /* default port */
+	/* TODO: might need to just let the user specify this */
 	int port = 1883;
 
 	/* Configure TLS, if needed */

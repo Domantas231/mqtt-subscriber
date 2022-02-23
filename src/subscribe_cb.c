@@ -1,7 +1,7 @@
 #include <mosquitto.h>
 #include <syslog.h>
 
-#include "load_configs.h"
+#include "load_topics.h"
 
 
 /* Callback called when the broker sends a SUBACK in response to a SUBSCRIBE. */

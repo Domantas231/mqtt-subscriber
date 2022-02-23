@@ -4,7 +4,7 @@
 #include <stdlib.h>
 
 #include "connect_cb.h"
-#include "load_configs.h"
+#include "load_topics.h"
 #include "linked_list.h"
 
 int subscribe_every_topic(struct mosquitto *mosq, tp_node *topics){
@@ -34,6 +34,6 @@ void on_connect(struct mosquitto *mosq, void *obj, int rc){
 		mosquitto_disconnect(mosq);
 	}
 
-	struct tp_node *topics = (tp_node *)obj;
+	struct tp_node *topics = obj;
 	subscribe_every_topic(mosq, topics);
 }

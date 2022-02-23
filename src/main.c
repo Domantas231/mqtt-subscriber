@@ -8,6 +8,7 @@
 #include "signal_handler.h"
 #include "msg_db_handler.h"
 #include "conf_mosq.h"
+#include "linked_list.h"
 
 int main(int argc, char *argv[])
 {
@@ -18,10 +19,11 @@ int main(int argc, char *argv[])
 	open_db();
 
 	/* load topics and events, then pass it as a void pointer */
+	/* TODO: waht if theydotn exsit */
 	struct tp_node *topics = NULL;
 	load_topics(&topics);
 
-	/* Required(?) before calling other mosquitto functions */
+	/* Required before calling other mosquitto functions */
     mosquitto_lib_init();
 
 	struct mosquitto *mosq = NULL;
@@ -44,5 +46,5 @@ int main(int argc, char *argv[])
 
 		list_delall_tp(&topics);
 
-		exit(EXIT_SUCCESS);
+		return 0;
 }

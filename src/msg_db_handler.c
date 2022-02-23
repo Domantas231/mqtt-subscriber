@@ -22,9 +22,6 @@ int curr_time(char current[], int n){
     return 0;
 }
 
-/*
- * Need to convert payload to char* first
- */
 int save_message(char *topic, int qos, char *payload){
     int rc;
 

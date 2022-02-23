@@ -3,7 +3,8 @@
 #include <string.h>
 #include <memory.h>
 
-#include "load_configs.h"
+#include "load_topics.h"
+#include "linked_list.h"
 
 /* 
  * TODO: There has to be a better way to do this

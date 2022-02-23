@@ -4,13 +4,18 @@
 #include <syslog.h>
 #include <uci.h>
 
-#include "load_configs.h"
+#include "load_topics.h"
+#include "linked_list.h"
 
 #define STR_EQUALS(x, y) if(strcmp(x, y) == 0)
 #define STR_ASSIGN(field, string) strcpy(field, string)
 
 struct uci_context *context = NULL;
 struct uci_package *package = NULL;
+
+/* ====================
+ * UCI RELATED HANDLING
+ * ==================== */
 
 static int start_uci_ctx(char *config){
     int rc = 0;
@@ -32,6 +37,23 @@ static void close_uci_ctx(){
     uci_free_context(context);
 }
 
+/* ============================
+ * FINDING AND ASSIGNING VALUES
+ * ============================ */
+
+/*
+ * TODO: add a rc to this
+ * add error checking
+ * Don't know if I need to do this or
+ * just blame the user
+ */
+int assign_topic_value(struct topic *topic, struct uci_option *option, char *option_name){
+    STR_EQUALS("name", option_name) STR_ASSIGN((*topic).name, option->v.string);
+    else STR_EQUALS("qos", option_name){
+        (*topic).qos = atoi(option->v.string);
+    }
+}
+
 static int assign_event_value(struct event *event, struct uci_option *option, char *option_name){
     STR_EQUALS("topic", option_name) STR_ASSIGN((*event).topic, option->v.string);
     else STR_EQUALS("paramKey", option_name) STR_ASSIGN((*event).param_key, option->v.string);
@@ -43,9 +65,7 @@ static int assign_event_value(struct event *event, struct uci_option *option, ch
     else STR_EQUALS("emailSubject", option_name) STR_ASSIGN((*event).email_subject, option->v.string);
     else STR_EQUALS("dataType", option_name){
         STR_EQUALS("number", option->v.string) (*event).dt = NUMBER;
-        else {
-            (*event).dt = STRING;
-        }
+        else (*event).dt = STRING;
     }
     else STR_EQUALS("recipient", option_name){
         struct uci_element *el;
@@ -62,46 +82,9 @@ static int assign_event_value(struct event *event, struct uci_option *option, ch
     else syslog(LOG_WARNING, "A non existant option was parsed: %s", option_name);
 }
 
-int get_events(ev_node **events){
-    int rc = 0;
-
-    syslog(LOG_INFO, "Processing %s file's sections and options", TOPIC_CFG);
-    struct uci_element *i, *j;
-
-    uci_foreach_element(&package->sections, i)
-    {
-        /* temporary node and event struct, used to store iterator data */
-        ev_node *ntmp = malloc(sizeof(ev_node));
-        struct event *tmp = malloc(sizeof(struct event));
-        tmp->recp_list = NULL;
-
-        struct uci_section *section = uci_to_section(i);
-        uci_foreach_element(&section->options, j)
-        {
-            struct uci_option *option = uci_to_option(j);
-            char *option_name = option->e.name;
-
-            assign_event_value(tmp, option, option_name);
-        }
-        ntmp->next = NULL;
-        ntmp->obj = tmp;
-
-        list_addback_ev(events, ntmp);
-    }
-
-    return rc;
-}
-
-/*
- * TODO: add a rc to this
- * add error checking
- */
-int assign_topic_value(struct topic *topic, struct uci_option *option, char *option_name){
-    STR_EQUALS("name", option_name) STR_ASSIGN((*topic).name, option->v.string);
-    else STR_EQUALS("qos", option_name){
-        (*topic).qos = atoi(option->v.string);
-    }
-}
+/* =================
+ * PARSING FUNCTIONS
+ * ================= */
 
 int get_topics(tp_node **topics){
     int rc = 0;
@@ -133,21 +116,73 @@ int get_topics(tp_node **topics){
     return rc;
 }
 
+int get_events(ev_node **events){
+    int rc = 0;
+
+    syslog(LOG_INFO, "Processing %s file's sections and options", EVENT_CFG);
+    struct uci_element *i, *j;
+
+    uci_foreach_element(&package->sections, i)
+    {
+        /* temporary node and event struct, used to store iterator data */
+        ev_node *ntmp = malloc(sizeof(ev_node));
+        struct event *tmp = malloc(sizeof(struct event));
+        tmp->recp_list = NULL;
+
+        struct uci_section *section = uci_to_section(i);
+        uci_foreach_element(&section->options, j)
+        {
+            struct uci_option *option = uci_to_option(j);
+            char *option_name = option->e.name;
+
+            syslog(LOG_DEBUG, "Got option name and value: %s %s", option_name, option->v.string);
+            assign_event_value(tmp, option, option_name);
+        }
+        ntmp->next = NULL;
+        ntmp->obj = tmp;
+
+        list_addback_ev(events, ntmp);
+    }
+
+    return rc;
+}
+
+
+/*
+ * Add event nodes to their topics
+ */
+
 int assign_ev_to_tp(tp_node **topics, ev_node *events){
     for(tp_node *tp_iter = *topics; tp_iter != NULL; tp_iter = tp_iter->next){
         char *tp_name = tp_iter->obj->name;
 
-        /* TODO: this may cause leaks, as unassigned nodes don't get freed */ 
         for(ev_node *ev_iter = events; ev_iter != NULL; ev_iter = ev_iter->next){
-            if(strcmp(tp_name, ev_iter->obj->topic) == 0){
-                /* TODO: check whether this actually works;
-                   maybe also add deleting, so that you don't
-                   iterate through the same elements twice */
-                list_addback_ev(&(tp_iter->obj->events), ev_iter);
+            if(strcmp(tp_name, ev_iter->obj->topic) == 0){    
+
+                /* 
+                 * This is quite clunky, but doing
+                 * it another way causes either:
+                 * leak memory or to lose info about events
+                 */
+                ev_node *tmp = malloc(sizeof(struct ev_node));
+                tmp->next = NULL;
+
+                struct event *e_tmp = malloc(sizeof(struct event)); 
+                *e_tmp = *ev_iter->obj;
+                tmp->obj = e_tmp;
+                
+
+                list_addback_ev(&(tp_iter->obj->events), tmp);
             }
         }
     }
+
+    list_delall_ev(&events);
 }
+
+/* =============
+ * MAIN FUNCTION
+ * ============= */
 
 int load_topics(struct tp_node **head){
     context = uci_alloc_context();

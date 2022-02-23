@@ -59,11 +59,11 @@ static void create_pheader(char *sndr_email, str_node *recpt_email, char *subjec
   char time[26];
   curr_time(time, 26);
 
-  char to_email[2048];
+  char to_email[] = "";
 
-  // for(str_node *iter = recpt_email; iter != NULL; iter = iter->next){
-  //   strcat(to_email, iter->obj);
-  // }
+  for(str_node *iter = recpt_email; iter != NULL; iter = iter->next){
+      strcat(to_email, iter->obj);
+  }
 
   snprintf(payload_header, 1024,
   "Date: %s +1100\r\n"
@@ -162,7 +162,15 @@ int send_mail(char *msg, char *sndr_mail, char* sndr_passw, str_node *recp_list,
      */
 
     create_pbody(msg);
-    create_pheader(sndr_mail, "domantas231@gmail.com", subject);
+
+    /*
+     * TEMP
+     */
+
+      str_node tmp = {.next = NULL, .obj = "domantas231@gmail.com"};
+
+
+    create_pheader(sndr_mail, &tmp, subject);
     update_payload();
  
     /* Send the message */
