@@ -22,14 +22,17 @@ void list_addback_ev(ev_node **head, ev_node *new){
     iter->next = new;
 }
 
-void list_delall_ev(ev_node **head){
+void list_delall_ev(ev_node **head, int free_str){
     ev_node *temp;
 
     while(*head != NULL){
         temp = *head;
         *head = (*head)->next;
 
-        list_delall_str(&temp->obj->recp_list);
+        /* only adding this one line because I HAVE to free all of the events in a different line */
+        /* otherwise I get a segmentation fault trying to free a space that has already been freed */
+        if(free_str) list_delall_str(&temp->obj->recp_list);
+
         free(temp->obj);
         free(temp);
     }
@@ -54,7 +57,7 @@ void list_delall_tp(tp_node **head){
         temp = *head;
         *head = (*head)->next;
 
-        list_delall_ev(&temp->obj->events);
+        list_delall_ev(&temp->obj->events, 0);
         free(temp->obj);
         free(temp);
     }

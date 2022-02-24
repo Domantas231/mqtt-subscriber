@@ -61,8 +61,7 @@ int eval_events(struct topic *tp, char *payload){
 
         if(!res){
             syslog(LOG_DEBUG, "Trying to send notification email");
-            send_mail(iter->obj->email_msg, iter->obj->sender, iter->obj->sender_passw, 
-                      iter->obj->recp_list, 25, 0, iter->obj->email_subject);
+            send_mail(iter->obj, 25, 0);
         } 
     }
 }
@@ -79,14 +78,6 @@ void on_message(struct mosquitto *mosq, void *obj, const struct mosquitto_messag
     /* get the topics from the mosq object */
     struct tp_node *topics = obj;
 
-    /*
-     * TODO: need to fix the function below
-     * so that i returns a 0 on successfully
-     * finding the event by topic
-     * and make it compatibale with the new structure of 
-     * topics 
-     */ 
-    
     struct topic *got_tp = NULL;
     if(find_by_topic(msg->topic, topics, &got_tp)){
         return;

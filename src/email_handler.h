@@ -5,6 +5,6 @@
  * TODO: Keep in mind the message size has to be under 1024
  * maybe need to change that
  */
-int send_mail(char *msg, char *sndr_mail, char* sndr_passw, str_node *recpt_list, int port, int use_ssl, char* subject);
+int send_mail(struct event *ev, int port, int use_ssl);
 
 #endif

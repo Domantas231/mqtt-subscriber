@@ -21,7 +21,8 @@ int main(int argc, char *argv[])
 	/* load topics and events, then pass it as a void pointer */
 	/* TODO: waht if theydotn exsit */
 	struct tp_node *topics = NULL;
-	load_topics(&topics);
+	struct ev_node *events = NULL;
+	load_topics(&topics, &events);
 
 	/* Required before calling other mosquitto functions */
     mosquitto_lib_init();
@@ -44,6 +45,8 @@ int main(int argc, char *argv[])
 		mosquitto_destroy(mosq);
 		mosquitto_lib_cleanup();
 
+		/* this is bad */
+		list_delall_ev(&events, 1);
 		list_delall_tp(&topics);
 
 		return 0;

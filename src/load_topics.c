@@ -44,7 +44,7 @@ static void close_uci_ctx(){
 /*
  * TODO: add a rc to this
  * add error checking
- * Don't know if I need to do this or
+ * ^ don't know if I need to do this or
  * just blame the user
  */
 int assign_topic_value(struct topic *topic, struct uci_option *option, char *option_name){
@@ -157,43 +157,34 @@ int assign_ev_to_tp(tp_node **topics, ev_node *events){
         char *tp_name = tp_iter->obj->name;
 
         for(ev_node *ev_iter = events; ev_iter != NULL; ev_iter = ev_iter->next){
-            if(strcmp(tp_name, ev_iter->obj->topic) == 0){    
+            if(strcmp(tp_name, ev_iter->obj->topic) == 0)
+            {
+                struct ev_node *ev_tmp = malloc(sizeof(struct ev_node));
+                struct event *tmp = malloc(sizeof(struct event));
 
-                /* 
-                 * This is quite clunky, but doing
-                 * it another way causes either:
-                 * leak memory or to lose info about events
-                 */
-                ev_node *tmp = malloc(sizeof(struct ev_node));
-                tmp->next = NULL;
+                *tmp = *ev_iter->obj;
+                ev_tmp->obj = tmp;
+                ev_tmp->next = NULL;
 
-                struct event *e_tmp = malloc(sizeof(struct event)); 
-                *e_tmp = *ev_iter->obj;
-                tmp->obj = e_tmp;
-                
-
-                list_addback_ev(&(tp_iter->obj->events), tmp);
+                list_addback_ev(&(tp_iter->obj->events), ev_tmp);
             }
         }
     }
-
-    list_delall_ev(&events);
 }
 
 /* =============
  * MAIN FUNCTION
  * ============= */
 
-int load_topics(struct tp_node **head){
+int load_topics(struct tp_node **head, struct ev_node **events){
     context = uci_alloc_context();
     start_uci_ctx(TOPIC_CFG);
 
     get_topics(head);
 
     start_uci_ctx(EVENT_CFG);
-    ev_node *events = NULL;
-    get_events(&events);
+    get_events(events);
     close_uci_ctx();
 
-    assign_ev_to_tp(head, events);
+    assign_ev_to_tp(head, *events);
 }

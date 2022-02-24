@@ -26,6 +26,7 @@
  */
  
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <curl/curl.h>
 #include <syslog.h>
@@ -37,43 +38,38 @@
  * Probably need to fix this up a bit, so bigger messages can be stored
  * Arbitrary size numbers
  */
-static char payload_header[1024];
-static char payload_body[1024];
-static char payload_text[2048];
+#define MAX_N 2048
+
+static char payload_header[MAX_N];
+static char payload_body[MAX_N];
+static char payload_text[2*MAX_N];
 
 static void update_payload(){
   syslog(LOG_DEBUG, "Updating the whole payload");
 
-  snprintf(payload_text, 2048, "%s%s", payload_header, payload_body);
+  snprintf(payload_text, 2*MAX_N, "%s%s", payload_header, payload_body);
 }
 
 static int create_pbody(char *msg){
   syslog(LOG_DEBUG, "Updating the payload body");
 
-  snprintf(payload_body, 1024, "%s\r\n", msg);
+  snprintf(payload_body, MAX_N, "%s\r\n", msg);
 }
 
-static void create_pheader(char *sndr_email, str_node *recpt_email, char *subject){
+static void create_pheader(char *sndr_email, char *recipient, char *subject){
   syslog(LOG_DEBUG, "Updating the payload header");
 
   char time[26];
   curr_time(time, 26);
 
-  char to_email[] = "";
-
-  for(str_node *iter = recpt_email; iter != NULL; iter = iter->next){
-      strcat(to_email, iter->obj);
-  }
-
-  snprintf(payload_header, 1024,
+  snprintf(payload_header, MAX_N,
   "Date: %s +1100\r\n"
   "To: %s\r\n"
   "From: %s\r\n"
-  "Message-ID: <dcd7cb36-11db-487a-9f3a-e652a9458efd@"
-  "rfcpedant.example.org>\r\n"
+  "Message-ID: <dcd7cb36-11db-487a-9f3a-e652a9458efd@rfcpedant.example.org>\r\n"
   "Subject: %s\r\n"
   "\r\n", /* empty line to divide headers from body, see RFC5322 */
-  time, to_email, sndr_email, subject);
+  time, recipient, sndr_email, subject);
 }
 
 struct upload_status {
@@ -105,25 +101,8 @@ static size_t payload_source(char *ptr, size_t size, size_t nmemb, void *userp)
   return 0;
 }
 
-/*
- * Adds all the recipients to the curl_slist variable
- * supplied to the curl_easy_opt function
- */
-int add_all_recipients(struct curl_slist **recipients, str_node *ev_recp){
-  int rc = 0;
-
-  for(str_node *iter = ev_recp; iter != NULL; iter = iter->next)
-  {
-    *recipients = curl_slist_append(*recipients, iter->obj);
-  }
-
-  return rc;
-}
-
-int send_mail(char *msg, char *sndr_mail, char* sndr_passw, str_node *recp_list, int port, int use_ssl, char* subject)
+int send_mail(struct event *ev, int port, int use_ssl)
 {
-  syslog(LOG_DEBUG, "To funcion send_mail was passed: %s %s %s %d %d", msg, sndr_mail, recp_list->obj, port, use_ssl);
-
   CURL *curl;
   CURLcode res = CURLE_OK;
   struct curl_slist *recipients = NULL;
@@ -137,9 +116,9 @@ int send_mail(char *msg, char *sndr_mail, char* sndr_passw, str_node *recp_list,
     snprintf(server_addr, 50, "smtp.mailgun.org:%d", port);
     curl_easy_setopt(curl, CURLOPT_URL, server_addr);
 
-    curl_easy_setopt(curl, CURLOPT_MAIL_FROM, sndr_mail);
-    curl_easy_setopt(curl, CURLOPT_USERNAME, sndr_mail);
-    curl_easy_setopt(curl, CURLOPT_PASSWORD, sndr_passw);
+    curl_easy_setopt(curl, CURLOPT_MAIL_FROM, ev->sender);
+    curl_easy_setopt(curl, CURLOPT_USERNAME, ev->sender);
+    curl_easy_setopt(curl, CURLOPT_PASSWORD, ev->sender_passw);
 
     /* if using ssl verification */ 
     if(use_ssl){
@@ -147,10 +126,6 @@ int send_mail(char *msg, char *sndr_mail, char* sndr_passw, str_node *recp_list,
       curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST , 1);
       curl_easy_setopt(curl, CURLOPT_CAINFO , "./ca.cert");
     }
-
-    /* TODO: might need to add a To: infront of a receiver, otherwise it doesn't transfer */
-    add_all_recipients(&recipients, recp_list);
-    curl_easy_setopt(curl, CURLOPT_MAIL_RCPT, recipients);
 
     curl_easy_setopt(curl, CURLOPT_READFUNCTION, payload_source);
     curl_easy_setopt(curl, CURLOPT_READDATA, &upload_ctx);
@@ -161,27 +136,26 @@ int send_mail(char *msg, char *sndr_mail, char* sndr_passw, str_node *recp_list,
      * update header for every recipient 
      */
 
-    create_pbody(msg);
+    for(str_node *iter = ev->recp_list; iter != NULL; iter = iter->next){
+      struct curl_slist *recipient = NULL;
+      recipient = curl_slist_append(recipient, iter->obj);
 
-    /*
-     * TEMP
-     */
+      curl_easy_setopt(curl, CURLOPT_MAIL_RCPT, recipient);
 
-      str_node tmp = {.next = NULL, .obj = "domantas231@gmail.com"};
+      create_pbody(ev->email_msg);
+      create_pheader(ev->sender, iter->obj, ev->email_subject);
+      update_payload();
 
+      /* Send the message */
+      res = curl_easy_perform(curl);
 
-    create_pheader(sndr_mail, &tmp, subject);
-    update_payload();
- 
-    /* Send the message */
-    res = curl_easy_perform(curl);
- 
-    /* Check for errors */
-    if(res != CURLE_OK)
-      syslog(LOG_ERR, "curl_easy_perform() failed: %d\n", res);
- 
-    /* Free the list of recipients */
-    curl_slist_free_all(recipients);
+      /* Check for errors */
+      if(res != CURLE_OK)
+        syslog(LOG_ERR, "curl_easy_perform() failed: %d\n", res);
+
+      /* Free the list of recipients */
+      curl_slist_free_all(recipients);
+    }
  
     /* curl will not send the QUIT command until you call cleanup, so you
      * should be able to re-use this connection for additional messages

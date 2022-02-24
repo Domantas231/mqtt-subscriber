@@ -57,6 +57,6 @@ typedef struct tp_node {
     struct topic *obj;
 } tp_node;
 
-int load_topics(struct tp_node **head);
+int load_topics(struct tp_node **head, struct ev_node **events);
 
 #endif
