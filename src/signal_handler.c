@@ -3,6 +3,7 @@
 #include <mosquitto.h>
 
 #include "signal_handler.h"
+#include "email_handler.h"
 
 struct sigaction action;
 

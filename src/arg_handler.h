@@ -4,12 +4,15 @@
 #include <argp.h>
 
 /* an arbitrary number, enough to fit long options */
-#define Nopt 30
+#define Nopt 50
 
 struct arguments {
     char ca_path[Nopt];
     char user[Nopt];
     char pass[Nopt];
+    char server[Nopt];
+    int port;
+    int use_db;
 };
 
 extern const char doc[];

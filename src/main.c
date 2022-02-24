@@ -9,17 +9,20 @@
 #include "msg_db_handler.h"
 #include "conf_mosq.h"
 #include "linked_list.h"
+#include "arg_handler.h"
 
 int main(int argc, char *argv[])
 {
 	int rc;
 
+	/* default options */
+    struct arguments args = {.ca_path = "", .pass = "", .user = "", .use_db = 1, .port = 1883, .server = DOMAIN};
+    parse_options(argc, argv, &args);
+
 	/* open the data base to save received messages */
-	/* TODO: do they really want this */
-	open_db();
+	if(args.use_db) open_db();
 
 	/* load topics and events, then pass it as a void pointer */
-	/* TODO: waht if theydotn exsit */
 	struct tp_node *topics = NULL;
 	struct ev_node *events = NULL;
 	load_topics(&topics, &events);
@@ -28,7 +31,7 @@ int main(int argc, char *argv[])
     mosquitto_lib_init();
 
 	struct mosquitto *mosq = NULL;
-	if((rc = configure_mosq(&mosq, argc, argv, topics)) != MOSQ_ERR_SUCCESS){
+	if((rc = configure_mosq(&mosq, args, topics)) != MOSQ_ERR_SUCCESS){
 		goto cleanup;
 	}
 
@@ -45,7 +48,7 @@ int main(int argc, char *argv[])
 		mosquitto_destroy(mosq);
 		mosquitto_lib_cleanup();
 
-		/* this is bad */
+		/* this is bad..? */
 		list_delall_ev(&events, 1);
 		list_delall_tp(&topics);
 

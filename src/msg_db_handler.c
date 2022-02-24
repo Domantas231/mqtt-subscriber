@@ -7,9 +7,7 @@
 
 sqlite3 *DB = NULL;
 
-/*
- * Get the current time
- */
+/* Get the current time */
 int curr_time(char current[], int n){
     time_t rawtime;
     struct tm *timeinfo;

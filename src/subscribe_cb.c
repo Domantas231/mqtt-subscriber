@@ -9,9 +9,6 @@ void on_subscribe(struct mosquitto *mosq, void *obj, int mid, int qos_count, con
 {
 	bool have_subscription = false;
 
-	/* In this example we only subscribe to a single topic at once, but a
-	 * SUBSCRIBE can contain many topics at once, so this is one way to check
-	 * them all. */
 	tp_node *iter = obj;
 	for(int i = 0; i < qos_count; i++){
 		syslog(LOG_DEBUG, "on_subscribe: %d:granted qos = %d\n", i, granted_qos[i]);

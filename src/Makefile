@@ -12,8 +12,8 @@ $(BIN): $(SRC)
 	$(CC) -g -o $(BIN) $(SRC) $(LDFLAGS)
 
 install:
-	$(CP) ./files/events.config /etc/config/mqtt_sub_events
-	$(CP) ./files/topics.config /etc/config/mqtt_sub_topics
+	install -m 666 ../files/events.config /etc/config/mqtt_sub_events
+	install -m 666 ../files/topics.config /etc/config/mqtt_sub_topics
 
 clean:
-	$(RM) $(BIN) $(OBJS)
+	$(RM) $(BIN) $(OBJS) 

@@ -31,6 +31,10 @@ struct event {
     str_node *recp_list;
     char sender[2*N];
     char sender_passw[2*N];
+    char smtp_server[2*N];
+    char smtp_port[10];
+    char ca_path[2*N];
+    char use_ssl[10];
     char email_msg[2*N];
     char email_subject[N];
 };
