@@ -3,7 +3,7 @@
 #include <syslog.h>
 #include <stdio.h>
 
-#define FD "mqtt_sub_msgs.db"
+#define FD "/var/log/mqtt_sub_msgs.db"
 
 sqlite3 *DB = NULL;
 
@@ -23,28 +23,27 @@ int curr_time(char current[], int n){
 int save_message(char *topic, int qos, char *payload){
     int rc;
 
-    char *err;
+    char err[20];
 
     char time[26];
     curr_time(time, 26);
 
     char *temp = "INSERT INTO Messages (time, topic, qos, payload) VALUES";
 
-    char query[128];
-    snprintf(query, 128, "%s('%s', '%s', '%d', '%s')", temp, time, topic, qos, payload);
+    char query[256];
+    snprintf(query, 256, "%s('%s', '%s', '%d', '%s')", temp, time, topic, qos, payload);
 
     rc = sqlite3_exec(DB, query, NULL, NULL, &err);
     if(rc != SQLITE_OK)
         syslog(LOG_WARNING, "Can't insert new message: %s \n", err);
     
-    sqlite3_free(err);
-    return 0;
+    return rc;
 }
 
 static int create_db(){
     int rc;
 
-    char *err;
+    char err[20];
     
     char *table = "CREATE TABLE if not exists Messages("
                         "id INTEGER PRIMARY KEY,"
